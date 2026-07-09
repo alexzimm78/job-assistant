@@ -1,6 +1,7 @@
 export class Candidate {
     id: number;
-    name: string;
+    fullName: string;
     email: string;
-    isActive: boolean;
+    phone: string;
+    city: string;
 }
