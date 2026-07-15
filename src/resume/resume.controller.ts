@@ -1,41 +1,23 @@
-import {Body, Controller, Get, Param, Post} from '@nestjs/common';
-import {Resume} from './resume.entity';
-import {Candidate} from '../candidate/candidate.entity';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+
+import { Resume } from './resume.entity';
+import { ResumeService } from './resume.service';
 
 @Controller('resumes')
 export class ResumeController {
+    constructor(
+        private readonly resumeService: ResumeService,
+    ) {}
+
     @Get()
-    getAll(): Resume[] {
-        const candidate = new Candidate();
-        candidate.id = 1;
-
-        const resume = new Resume();
-        resume.id = 1;
-        resume.candidate = candidate;
-        resume.title = 'AI Engineer';
-        resume.skills = ['TypeScript', 'NestJS', 'Python'];
-        resume.experience = '2 years';
-
-        return [resume];
+    findAll(): Promise<Resume[]> {
+        return this.resumeService.findAll();
     }
 
     @Get(':id')
-    getById(@Param('id') id: string): Resume {
-        const candidate = new Candidate();
-        candidate.id = 1;
-
-        const resume = new Resume();
-        resume.id = Number(id);
-        resume.candidate = candidate;
-        resume.title = 'AI Engineer';
-        resume.skills = ['TypeScript', 'NestJS', 'Python'];
-        resume.experience = '2 years';
-
-        return resume;
-    }
-
-    @Post()
-    create(@Body() resume: Resume): Resume {
-        return resume;
+    findById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<Resume | null> {
+        return this.resumeService.findById(id);
     }
 }

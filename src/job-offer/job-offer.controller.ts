@@ -1,37 +1,23 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+
 import { JobOffer } from './job-offer.entity';
+import { JobOfferService } from './job-offer.service';
 
 @Controller('job-offers')
 export class JobOfferController {
+    constructor(
+        private readonly jobOfferService: JobOfferService,
+    ) {}
 
     @Get()
-    getAll(): JobOffer[] {
-        const job: JobOffer = new JobOffer();
-        job.id = 1;
-        job.companyName = 'OpenAI';
-        job.position = 'AI Engineer';
-        job.city = 'Berlin';
-        job.salaryFrom = 5000;
-        job.salaryTo = 7000;
-
-        return [job];
+    findAll(): Promise<JobOffer[]> {
+        return this.jobOfferService.findAll();
     }
 
     @Get(':id')
-    getById(@Param('id') id: string): JobOffer {
-        const job: JobOffer = new JobOffer();
-        job.id = Number(id);
-        job.companyName = 'OpenAI';
-        job.position = 'AI Engineer';
-        job.city = 'Berlin';
-        job.salaryFrom = 5000;
-        job.salaryTo = 7000;
-
-        return job;
-    }
-
-    @Post()
-    create(@Body() job: JobOffer): JobOffer {
-        return job;
+    findById(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<JobOffer | null> {
+        return this.jobOfferService.findById(id);
     }
 }

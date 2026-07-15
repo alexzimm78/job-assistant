@@ -10,4 +10,21 @@ export class ResumeService {
         @InjectRepository(Resume)
         private readonly resumeRepository: Repository<Resume>,
     ) {}
+
+    findAll(): Promise<Resume[]> {
+        return this.resumeRepository.find({
+            relations: {
+                candidate: true,
+            },
+        });
+    }
+
+    findById(id: number): Promise<Resume | null> {
+        return this.resumeRepository.findOne({
+            where: { id },
+            relations: {
+                candidate: true,
+            },
+        });
+    }
 }

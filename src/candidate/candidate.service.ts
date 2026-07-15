@@ -11,4 +11,13 @@ export class CandidateService {
     ) {
     }
 
+    findAll(): Promise<Candidate[]> {
+        return this.candidateRepository.find();
+    }
+
+    findById(id: number): Promise<Candidate | null> {
+        return this.candidateRepository.findOne({
+            where: {id},
+        });
+    }
 }

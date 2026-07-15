@@ -10,4 +10,25 @@ export class ApplicationService {
         @InjectRepository(Application)
         private readonly applicationRepository: Repository<Application>,
     ) {}
+
+    findAll(): Promise<Application[]> {
+        return this.applicationRepository.find({
+            relations: {
+                candidate: true,
+                resume: true,
+                jobOffer: true,
+            },
+        });
+    }
+
+    findById(id: number): Promise<Application | null> {
+        return this.applicationRepository.findOne({
+            where: { id },
+            relations: {
+                candidate: true,
+                resume: true,
+                jobOffer: true,
+            },
+        });
+    }
 }
