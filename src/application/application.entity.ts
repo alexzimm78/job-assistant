@@ -3,30 +3,35 @@ import {
     Entity,
     JoinColumn,
     ManyToOne,
-    PrimaryGeneratedColumn
-} from "typeorm";
-import {Candidate} from "../candidate/candidate.entity";
-import {Resume} from "../resume/resume.entity";
-import {JobOffer} from "../job-offer/job-offer.entity";
-import {ApplicationStatus} from "./enums/application-status.enum";
+    PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { Candidate } from '../candidate/candidate.entity';
+import { Resume } from '../resume/resume.entity';
+import { JobOffer } from '../job-offer/job-offer.entity';
+import { ApplicationStatus } from './enums/application-status.enum';
 
 @Entity('applications')
 export class Application {
-
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ManyToOne(() => Candidate)
-    @JoinColumn({name: 'candidate_id'})
+    @ManyToOne(() => Candidate, {
+        nullable: false,
+    })
+    @JoinColumn({ name: 'candidate_id' })
     candidate: Candidate;
 
-    @ManyToOne(() => Resume)
-    @JoinColumn({name: 'resume_id'})
+    @ManyToOne(() => Resume, {
+        nullable: false,
+    })
+    @JoinColumn({ name: 'resume_id' })
     resume: Resume;
 
-    @ManyToOne(() => JobOffer)
-    @JoinColumn({name: 'job_offer_id'})
+    @ManyToOne(() => JobOffer, {
+        nullable: false,
+    })
+    @JoinColumn({ name: 'job_offer_id' })
     jobOffer: JobOffer;
 
     @Column()
@@ -34,7 +39,7 @@ export class Application {
 
     @Column({
         type: 'enum',
-        enum: ApplicationStatus
+        enum: ApplicationStatus,
     })
     status: ApplicationStatus;
 

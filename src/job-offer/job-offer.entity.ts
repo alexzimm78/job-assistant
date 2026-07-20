@@ -1,10 +1,13 @@
-import {EmploymentType} from "./enums/employment-type.enum";
-import {Column, Entity, PrimaryGeneratedColumn} from "typeorm";
+import {
+    Column,
+    Entity,
+    PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { EmploymentType } from './enums/employment-type.enum';
 
 @Entity('job_offers')
 export class JobOffer {
-
     @PrimaryGeneratedColumn()
     id: number;
 
