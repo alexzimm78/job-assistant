@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -6,9 +7,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+  );
+
   const config = new DocumentBuilder()
       .setTitle('AI Job Assistant API')
-      .setDescription('API für Kandidaten, Lebensläufe, Stellenangebote und Bewerbungen')
+      .setDescription(
+          'API für Kandidaten, Lebensläufe, Stellenangebote und Bewerbungen',
+      )
       .setVersion('1.0')
       .build();
 
@@ -19,4 +30,4 @@ async function bootstrap() {
   await app.listen(3000);
 }
 
-bootstrap();
+void bootstrap();
