@@ -1,14 +1,13 @@
-import {
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Resume } from './resume.entity';
 import { Candidate } from '../candidate/candidate.entity';
+import { CandidateNotFoundException } from '../candidate/exceptions/candidate-not-found.exception';
 import { CreateResumeDto } from './dto/create-resume.dto';
+import { ResumeNotFoundException } from './exceptions/resume-not-found.exception';
 import { ResumeMappers } from './mapper/resume.mappers';
+import { Resume } from './resume.entity';
 
 @Injectable()
 export class ResumeService {
@@ -21,18 +20,18 @@ export class ResumeService {
     ) {}
 
     async create(dto: CreateResumeDto): Promise<Resume> {
-        const candidate =
+        const candidate: Candidate | null =
             await this.candidateRepository.findOneBy({
                 id: dto.candidateId,
             });
 
         if (!candidate) {
-            throw new NotFoundException(
-                `Candidate with ID ${dto.candidateId} not found`,
+            throw new CandidateNotFoundException(
+                dto.candidateId,
             );
         }
 
-        const resume = ResumeMappers.toEntity(
+        const resume: Resume = ResumeMappers.toEntity(
             dto,
             candidate,
         );
@@ -48,12 +47,19 @@ export class ResumeService {
         });
     }
 
-    findById(id: number): Promise<Resume | null> {
-        return this.resumeRepository.findOne({
-            where: { id },
-            relations: {
-                candidate: true,
-            },
-        });
+    async findById(id: number): Promise<Resume> {
+        const resume: Resume | null =
+            await this.resumeRepository.findOne({
+                where: { id },
+                relations: {
+                    candidate: true,
+                },
+            });
+
+        if (!resume) {
+            throw new ResumeNotFoundException(id);
+        }
+
+        return resume;
     }
 }

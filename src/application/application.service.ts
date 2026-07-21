@@ -1,16 +1,17 @@
-import {
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Application } from './application.entity';
 import { Candidate } from '../candidate/candidate.entity';
-import { Resume } from '../resume/resume.entity';
+import { CandidateNotFoundException } from '../candidate/exceptions/candidate-not-found.exception';
+import { JobOfferNotFoundException } from '../job-offer/exceptions/job-offer-not-found.exception';
 import { JobOffer } from '../job-offer/job-offer.entity';
-
+import { ResumeNotFoundException } from '../resume/exceptions/resume-not-found.exception';
+import { Resume } from '../resume/resume.entity';
+import { Application } from './application.entity';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { ApplicationAlreadyExistsException } from './exceptions/application-already-exists.exception';
+import { ApplicationNotFoundException } from './exceptions/application-not-found.exception';
 import { ApplicationMapper } from './mapper/application.mapper';
 
 @Injectable()
@@ -32,40 +33,59 @@ export class ApplicationService {
     async create(
         dto: CreateApplicationDto,
     ): Promise<Application> {
-        const candidate =
+        const candidate: Candidate | null =
             await this.candidateRepository.findOneBy({
                 id: dto.candidateId,
             });
 
         if (!candidate) {
-            throw new NotFoundException(
-                `Candidate with ID ${dto.candidateId} not found`,
+            throw new CandidateNotFoundException(
+                dto.candidateId,
             );
         }
 
-        const resume =
+        const resume: Resume | null =
             await this.resumeRepository.findOneBy({
                 id: dto.resumeId,
             });
 
         if (!resume) {
-            throw new NotFoundException(
-                `Resume with ID ${dto.resumeId} not found`,
+            throw new ResumeNotFoundException(
+                dto.resumeId,
             );
         }
 
-        const jobOffer =
+        const jobOffer: JobOffer | null =
             await this.jobOfferRepository.findOneBy({
                 id: dto.jobOfferId,
             });
 
         if (!jobOffer) {
-            throw new NotFoundException(
-                `JobOffer with ID ${dto.jobOfferId} not found`,
+            throw new JobOfferNotFoundException(
+                dto.jobOfferId,
             );
         }
 
-        const application =
+        const existingApplication: Application | null =
+            await this.applicationRepository.findOne({
+                where: {
+                    candidate: {
+                        id: dto.candidateId,
+                    },
+                    jobOffer: {
+                        id: dto.jobOfferId,
+                    },
+                },
+            });
+
+        if (existingApplication) {
+            throw new ApplicationAlreadyExistsException(
+                dto.candidateId,
+                dto.jobOfferId,
+            );
+        }
+
+        const application: Application =
             ApplicationMapper.toEntity(
                 dto,
                 candidate,
@@ -73,7 +93,9 @@ export class ApplicationService {
                 jobOffer,
             );
 
-        return this.applicationRepository.save(application);
+        return this.applicationRepository.save(
+            application,
+        );
     }
 
     findAll(): Promise<Application[]> {
@@ -86,14 +108,21 @@ export class ApplicationService {
         });
     }
 
-    findById(id: number): Promise<Application | null> {
-        return this.applicationRepository.findOne({
-            where: { id },
-            relations: {
-                candidate: true,
-                resume: true,
-                jobOffer: true,
-            },
-        });
+    async findById(id: number): Promise<Application> {
+        const application: Application | null =
+            await this.applicationRepository.findOne({
+                where: { id },
+                relations: {
+                    candidate: true,
+                    resume: true,
+                    jobOffer: true,
+                },
+            });
+
+        if (!application) {
+            throw new ApplicationNotFoundException(id);
+        }
+
+        return application;
     }
 }
