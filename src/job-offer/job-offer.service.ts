@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { CreateJobOfferDto } from './dto/create-job-offer.dto';
+import { UpdateJobOfferDto } from './dto/update-job-offer.dto';
 import { InvalidSalaryRangeException } from './exceptions/invalid-salary-range.exception';
 import { JobOfferNotFoundException } from './exceptions/job-offer-not-found.exception';
 import { JobOffer } from './job-offer.entity';
@@ -44,5 +45,37 @@ export class JobOfferService {
         }
 
         return jobOffer;
+    }
+
+    async update(
+        id: number,
+        dto: UpdateJobOfferDto,
+    ): Promise<JobOffer> {
+        const jobOffer: JobOffer =
+            await this.findById(id);
+
+        const salaryFrom: number =
+            dto.salaryFrom ?? jobOffer.salaryFrom;
+
+        const salaryTo: number =
+            dto.salaryTo ?? jobOffer.salaryTo;
+
+        if (salaryFrom > salaryTo) {
+            throw new InvalidSalaryRangeException(
+                salaryFrom,
+                salaryTo,
+            );
+        }
+
+        this.jobOfferRepository.merge(jobOffer, dto);
+
+        return this.jobOfferRepository.save(jobOffer);
+    }
+
+    async remove(id: number): Promise<void> {
+        const jobOffer: JobOffer =
+            await this.findById(id);
+
+        await this.jobOfferRepository.remove(jobOffer);
     }
 }

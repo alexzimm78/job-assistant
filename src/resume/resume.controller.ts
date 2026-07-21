@@ -1,15 +1,19 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
-    NotFoundException,
+    HttpCode,
+    HttpStatus,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
 } from '@nestjs/common';
 
 import {
     ApiCreatedResponse,
+    ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
@@ -17,10 +21,11 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 
-import { ResumeService } from './resume.service';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { ResumeResponseDto } from './dto/resume-response.dto';
+import { UpdateResumeDto } from './dto/update-resume.dto';
 import { ResumeMappers } from './mapper/resume.mappers';
+import { ResumeService } from './resume.service';
 
 @ApiTags('resumes')
 @Controller('resumes')
@@ -37,6 +42,9 @@ export class ResumeController {
         description:
             'Lebenslauf wurde erfolgreich erstellt',
         type: ResumeResponseDto,
+    })
+    @ApiNotFoundResponse({
+        description: 'Kandidat wurde nicht gefunden',
     })
     async create(
         @Body() dto: CreateResumeDto,
@@ -85,12 +93,57 @@ export class ResumeController {
         const resume =
             await this.resumeService.findById(id);
 
-        if (!resume) {
-            throw new NotFoundException(
-                `Resume with ID ${id} not found`,
-            );
-        }
+        return ResumeMappers.toResponseDto(resume);
+    }
+
+    @Patch(':id')
+    @ApiOperation({
+        summary: 'Lebenslauf teilweise aktualisieren',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiOkResponse({
+        description:
+            'Lebenslauf wurde erfolgreich aktualisiert',
+        type: ResumeResponseDto,
+    })
+    @ApiNotFoundResponse({
+        description:
+            'Lebenslauf oder Kandidat wurde nicht gefunden',
+    })
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateResumeDto,
+    ): Promise<ResumeResponseDto> {
+        const resume =
+            await this.resumeService.update(id, dto);
 
         return ResumeMappers.toResponseDto(resume);
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({
+        summary: 'Lebenslauf löschen',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiNoContentResponse({
+        description:
+            'Lebenslauf wurde erfolgreich gelöscht',
+    })
+    @ApiNotFoundResponse({
+        description: 'Lebenslauf wurde nicht gefunden',
+    })
+    async remove(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<void> {
+        await this.resumeService.remove(id);
     }
 }

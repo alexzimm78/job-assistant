@@ -1,15 +1,20 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
-    NotFoundException,
+    HttpCode,
+    HttpStatus,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
 } from '@nestjs/common';
 
 import {
+    ApiConflictResponse,
     ApiCreatedResponse,
+    ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
@@ -18,8 +23,9 @@ import {
 } from '@nestjs/swagger';
 
 import { ApplicationService } from './application.service';
-import { CreateApplicationDto } from './dto/create-application.dto';
 import { ApplicationResponseDto } from './dto/application-response.dto';
+import { CreateApplicationDto } from './dto/create-application.dto';
+import { UpdateApplicationDto } from './dto/update-application.dto';
 import { ApplicationMapper } from './mapper/application.mapper';
 
 @ApiTags('applications')
@@ -41,6 +47,10 @@ export class ApplicationController {
     @ApiNotFoundResponse({
         description:
             'Candidate, Resume oder JobOffer wurde nicht gefunden',
+    })
+    @ApiConflictResponse({
+        description:
+            'Der Kandidat hat sich bereits auf dieses Stellenangebot beworben',
     })
     async create(
         @Body() dto: CreateApplicationDto,
@@ -91,12 +101,61 @@ export class ApplicationController {
         const application =
             await this.applicationService.findById(id);
 
-        if (!application) {
-            throw new NotFoundException(
-                `Application with ID ${id} not found`,
-            );
-        }
+        return ApplicationMapper.toResponseDto(application);
+    }
+
+    @Patch(':id')
+    @ApiOperation({
+        summary: 'Bewerbung teilweise aktualisieren',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiOkResponse({
+        description:
+            'Bewerbung wurde erfolgreich aktualisiert',
+        type: ApplicationResponseDto,
+    })
+    @ApiNotFoundResponse({
+        description:
+            'Bewerbung, Candidate, Resume oder JobOffer wurde nicht gefunden',
+    })
+    @ApiConflictResponse({
+        description:
+            'Der Kandidat hat sich bereits auf dieses Stellenangebot beworben',
+    })
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateApplicationDto,
+    ): Promise<ApplicationResponseDto> {
+        const application =
+            await this.applicationService.update(id, dto);
 
         return ApplicationMapper.toResponseDto(application);
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({
+        summary: 'Bewerbung löschen',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiNoContentResponse({
+        description:
+            'Bewerbung wurde erfolgreich gelöscht',
+    })
+    @ApiNotFoundResponse({
+        description: 'Bewerbung wurde nicht gefunden',
+    })
+    async remove(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<void> {
+        await this.applicationService.remove(id);
     }
 }

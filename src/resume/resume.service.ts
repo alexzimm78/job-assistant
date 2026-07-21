@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Candidate } from '../candidate/candidate.entity';
 import { CandidateNotFoundException } from '../candidate/exceptions/candidate-not-found.exception';
 import { CreateResumeDto } from './dto/create-resume.dto';
+import { UpdateResumeDto} from "./dto/update-resume.dto";
 import { ResumeNotFoundException } from './exceptions/resume-not-found.exception';
 import { ResumeMappers } from './mapper/resume.mappers';
 import { Resume } from './resume.entity';
@@ -61,5 +62,47 @@ export class ResumeService {
         }
 
         return resume;
+    }
+
+    async update(
+        id: number,
+        dto: UpdateResumeDto,
+    ): Promise<Resume> {
+        const resume: Resume = await this.findById(id);
+
+        if (dto.candidateId !== undefined) {
+            const candidate: Candidate | null =
+                await this.candidateRepository.findOneBy({
+                    id: dto.candidateId,
+                });
+
+            if (!candidate) {
+                throw new CandidateNotFoundException(
+                    dto.candidateId,
+                );
+            }
+
+            resume.candidate = candidate;
+        }
+
+        if (dto.title !== undefined) {
+            resume.title = dto.title;
+        }
+
+        if (dto.skills !== undefined) {
+            resume.skills = dto.skills;
+        }
+
+        if (dto.experience !== undefined) {
+            resume.experience = dto.experience;
+        }
+
+        return this.resumeRepository.save(resume);
+    }
+
+    async remove(id: number): Promise<void> {
+        const resume: Resume = await this.findById(id);
+
+        await this.resumeRepository.remove(resume);
     }
 }

@@ -4,8 +4,9 @@ import { Repository } from 'typeorm';
 
 import { Candidate } from './candidate.entity';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
+import { UpdateCandidateDto } from './dto/update-candidate.dto';
+import { CandidateAlreadyExistsException } from './exceptions/candidate-already-exists.exception';
 import { CandidateNotFoundException } from './exceptions/candidate-not-found.exception';
-import { CandidateAlreadyExistsException} from "./exceptions/candidate-already.exists.exception";
 import { CandidateMapper } from './mapper/candidate.mapper';
 
 @Injectable()
@@ -46,5 +47,39 @@ export class CandidateService {
         }
 
         return candidate;
+    }
+
+    async update(
+        id: number,
+        dto: UpdateCandidateDto,
+    ): Promise<Candidate> {
+        const candidate: Candidate =
+            await this.findById(id);
+
+        if (dto.email && dto.email !== candidate.email) {
+            const existingCandidate: Candidate | null =
+                await this.candidateRepository.findOne({
+                    where: {
+                        email: dto.email,
+                    },
+                });
+
+            if (existingCandidate) {
+                throw new CandidateAlreadyExistsException(
+                    dto.email,
+                );
+            }
+        }
+
+        this.candidateRepository.merge(candidate, dto);
+
+        return this.candidateRepository.save(candidate);
+    }
+
+    async remove(id: number): Promise<void> {
+        const candidate: Candidate =
+            await this.findById(id);
+
+        await this.candidateRepository.remove(candidate);
     }
 }

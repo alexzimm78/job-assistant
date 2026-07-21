@@ -1,15 +1,20 @@
 import {
     Body,
     Controller,
+    Delete,
     Get,
-    NotFoundException,
+    HttpCode,
+    HttpStatus,
     Param,
     ParseIntPipe,
+    Patch,
     Post,
 } from '@nestjs/common';
 
 import {
+    ApiConflictResponse,
     ApiCreatedResponse,
+    ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
@@ -18,8 +23,9 @@ import {
 } from '@nestjs/swagger';
 
 import { CandidateService } from './candidate.service';
-import { CreateCandidateDto } from './dto/create-candidate.dto';
 import { CandidateResponseDto } from './dto/candidate-response.dto';
+import { CreateCandidateDto } from './dto/create-candidate.dto';
+import { UpdateCandidateDto } from './dto/update-candidate.dto';
 import { CandidateMapper } from './mapper/candidate.mapper';
 
 @ApiTags('candidates')
@@ -37,6 +43,10 @@ export class CandidateController {
         description:
             'Kandidat wurde erfolgreich erstellt',
         type: CandidateResponseDto,
+    })
+    @ApiConflictResponse({
+        description:
+            'Kandidat mit dieser E-Mail existiert bereits',
     })
     async create(
         @Body() dto: CreateCandidateDto,
@@ -85,12 +95,60 @@ export class CandidateController {
         const candidate =
             await this.candidateService.findById(id);
 
-        if (!candidate) {
-            throw new NotFoundException(
-                `Candidate with ID ${id} not found`,
-            );
-        }
+        return CandidateMapper.toResponseDto(candidate);
+    }
+
+    @Patch(':id')
+    @ApiOperation({
+        summary: 'Kandidaten teilweise aktualisieren',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiOkResponse({
+        description:
+            'Kandidat wurde erfolgreich aktualisiert',
+        type: CandidateResponseDto,
+    })
+    @ApiNotFoundResponse({
+        description: 'Kandidat wurde nicht gefunden',
+    })
+    @ApiConflictResponse({
+        description:
+            'Kandidat mit dieser E-Mail existiert bereits',
+    })
+    async update(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() dto: UpdateCandidateDto,
+    ): Promise<CandidateResponseDto> {
+        const candidate =
+            await this.candidateService.update(id, dto);
 
         return CandidateMapper.toResponseDto(candidate);
+    }
+
+    @Delete(':id')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({
+        summary: 'Kandidaten löschen',
+    })
+    @ApiParam({
+        name: 'id',
+        type: Number,
+        example: 1,
+    })
+    @ApiNoContentResponse({
+        description:
+            'Kandidat wurde erfolgreich gelöscht',
+    })
+    @ApiNotFoundResponse({
+        description: 'Kandidat wurde nicht gefunden',
+    })
+    async remove(
+        @Param('id', ParseIntPipe) id: number,
+    ): Promise<void> {
+        await this.candidateService.remove(id);
     }
 }
