@@ -1,17 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Candidate } from '../candidate/candidate.entity';
 import { CandidateNotFoundException } from '../candidate/exceptions/candidate-not-found.exception';
 import { CreateResumeDto } from './dto/create-resume.dto';
-import { UpdateResumeDto} from "./dto/update-resume.dto";
+import { UpdateResumeDto } from './dto/update-resume.dto';
 import { ResumeNotFoundException } from './exceptions/resume-not-found.exception';
 import { ResumeMappers } from './mapper/resume.mappers';
 import { Resume } from './resume.entity';
 
 @Injectable()
 export class ResumeService {
+    private readonly logger = new Logger(ResumeService.name);
+
     constructor(
         @InjectRepository(Resume)
         private readonly resumeRepository: Repository<Resume>,
@@ -37,7 +39,14 @@ export class ResumeService {
             candidate,
         );
 
-        return this.resumeRepository.save(resume);
+        const savedResume: Resume =
+            await this.resumeRepository.save(resume);
+
+        this.logger.log(
+            `Resume ${savedResume.id} was created`,
+        );
+
+        return savedResume;
     }
 
     findAll(): Promise<Resume[]> {
@@ -97,12 +106,23 @@ export class ResumeService {
             resume.experience = dto.experience;
         }
 
-        return this.resumeRepository.save(resume);
+        const updatedResume: Resume =
+            await this.resumeRepository.save(resume);
+
+        this.logger.log(
+            `Resume ${updatedResume.id} was updated`,
+        );
+
+        return updatedResume;
     }
 
     async remove(id: number): Promise<void> {
         const resume: Resume = await this.findById(id);
 
         await this.resumeRepository.remove(resume);
+
+        this.logger.warn(
+            `Resume ${id} was deleted`,
+        );
     }
 }

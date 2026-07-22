@@ -1,35 +1,35 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {Injectable, Logger} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {Repository} from 'typeorm';
 
-import { Candidate } from '../candidate/candidate.entity';
-import { CandidateNotFoundException } from '../candidate/exceptions/candidate-not-found.exception';
-import { JobOfferNotFoundException } from '../job-offer/exceptions/job-offer-not-found.exception';
-import { JobOffer } from '../job-offer/job-offer.entity';
-import { ResumeNotFoundException } from '../resume/exceptions/resume-not-found.exception';
-import { Resume } from '../resume/resume.entity';
-import { Application } from './application.entity';
-import { CreateApplicationDto } from './dto/create-application.dto';
-import { UpdateApplicationDto } from './dto/update-application.dto';
-import { ApplicationAlreadyExistsException } from './exceptions/application-already-exists.exception';
-import { ApplicationNotFoundException } from './exceptions/application-not-found.exception';
-import { ApplicationMapper } from './mapper/application.mapper';
+import {Candidate} from '../candidate/candidate.entity';
+import {CandidateNotFoundException} from '../candidate/exceptions/candidate-not-found.exception';
+import {JobOfferNotFoundException} from '../job-offer/exceptions/job-offer-not-found.exception';
+import {JobOffer} from '../job-offer/job-offer.entity';
+import {ResumeNotFoundException} from '../resume/exceptions/resume-not-found.exception';
+import {Resume} from '../resume/resume.entity';
+import {Application} from './application.entity';
+import {CreateApplicationDto} from './dto/create-application.dto';
+import {UpdateApplicationDto} from './dto/update-application.dto';
+import {ApplicationAlreadyExistsException} from './exceptions/application-already-exists.exception';
+import {ApplicationNotFoundException} from './exceptions/application-not-found.exception';
+import {ApplicationMapper} from './mapper/application.mapper';
 
 @Injectable()
 export class ApplicationService {
+    private readonly logger = new Logger(ApplicationService.name);
+
     constructor(
         @InjectRepository(Application)
         private readonly applicationRepository: Repository<Application>,
-
         @InjectRepository(Candidate)
         private readonly candidateRepository: Repository<Candidate>,
-
         @InjectRepository(Resume)
         private readonly resumeRepository: Repository<Resume>,
-
         @InjectRepository(JobOffer)
         private readonly jobOfferRepository: Repository<JobOffer>,
-    ) {}
+    ) {
+    }
 
     async create(
         dto: CreateApplicationDto,
@@ -94,9 +94,14 @@ export class ApplicationService {
                 jobOffer,
             );
 
-        return this.applicationRepository.save(
-            application,
+        const savedApplication: Application =
+            await this.applicationRepository.save(application);
+
+        this.logger.log(
+            `Application ${savedApplication.id} was created`,
         );
+
+        return savedApplication;
     }
 
     findAll(): Promise<Application[]> {
@@ -112,7 +117,7 @@ export class ApplicationService {
     async findById(id: number): Promise<Application> {
         const application: Application | null =
             await this.applicationRepository.findOne({
-                where: { id },
+                where: {id},
                 relations: {
                     candidate: true,
                     resume: true,
@@ -213,7 +218,14 @@ export class ApplicationService {
             application.sentAt = new Date(dto.sentAt);
         }
 
-        return this.applicationRepository.save(application);
+        const updatedApplication: Application =
+            await this.applicationRepository.save(application);
+
+        this.logger.log(
+            `Application ${updatedApplication.id} was updated, status: ${updatedApplication.status}`,
+        );
+
+        return updatedApplication;
     }
 
     async remove(id: number): Promise<void> {
@@ -221,5 +233,9 @@ export class ApplicationService {
             await this.findById(id);
 
         await this.applicationRepository.remove(application);
+
+        this.logger.warn(
+            `Application ${id} was deleted`,
+        );
     }
 }

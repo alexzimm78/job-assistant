@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -11,6 +11,8 @@ import { CandidateMapper } from './mapper/candidate.mapper';
 
 @Injectable()
 export class CandidateService {
+    private readonly logger = new Logger(CandidateService.name);
+
     constructor(
         @InjectRepository(Candidate)
         private readonly candidateRepository: Repository<Candidate>,
@@ -26,10 +28,16 @@ export class CandidateService {
             throw new CandidateAlreadyExistsException(dto.email);
         }
 
-        const candidate: Candidate =
-            CandidateMapper.toEntity(dto);
+        const candidate: Candidate = CandidateMapper.toEntity(dto);
 
-        return this.candidateRepository.save(candidate);
+        const savedCandidate: Candidate =
+            await this.candidateRepository.save(candidate);
+
+        this.logger.log(
+            `Candidate ${savedCandidate.id} was created`,
+        );
+
+        return savedCandidate;
     }
 
     findAll(): Promise<Candidate[]> {
@@ -53,8 +61,7 @@ export class CandidateService {
         id: number,
         dto: UpdateCandidateDto,
     ): Promise<Candidate> {
-        const candidate: Candidate =
-            await this.findById(id);
+        const candidate: Candidate = await this.findById(id);
 
         if (dto.email && dto.email !== candidate.email) {
             const existingCandidate: Candidate | null =
@@ -73,13 +80,23 @@ export class CandidateService {
 
         this.candidateRepository.merge(candidate, dto);
 
-        return this.candidateRepository.save(candidate);
+        const updatedCandidate: Candidate =
+            await this.candidateRepository.save(candidate);
+
+        this.logger.log(
+            `Candidate ${updatedCandidate.id} was updated`,
+        );
+
+        return updatedCandidate;
     }
 
     async remove(id: number): Promise<void> {
-        const candidate: Candidate =
-            await this.findById(id);
+        const candidate: Candidate = await this.findById(id);
 
         await this.candidateRepository.remove(candidate);
+
+        this.logger.warn(
+            `Candidate ${id} was deleted`,
+        );
     }
 }

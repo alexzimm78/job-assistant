@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -11,6 +11,8 @@ import { JobOfferMapper } from './mapper/job-offer.mapper';
 
 @Injectable()
 export class JobOfferService {
+    private readonly logger = new Logger(JobOfferService.name);
+
     constructor(
         @InjectRepository(JobOffer)
         private readonly jobOfferRepository: Repository<JobOffer>,
@@ -27,7 +29,14 @@ export class JobOfferService {
         const jobOffer: JobOffer =
             JobOfferMapper.toEntity(dto);
 
-        return this.jobOfferRepository.save(jobOffer);
+        const savedJobOffer: JobOffer =
+            await this.jobOfferRepository.save(jobOffer);
+
+        this.logger.log(
+            `Job offer ${savedJobOffer.id} was created`,
+        );
+
+        return savedJobOffer;
     }
 
     findAll(): Promise<JobOffer[]> {
@@ -69,7 +78,14 @@ export class JobOfferService {
 
         this.jobOfferRepository.merge(jobOffer, dto);
 
-        return this.jobOfferRepository.save(jobOffer);
+        const updatedJobOffer: JobOffer =
+            await this.jobOfferRepository.save(jobOffer);
+
+        this.logger.log(
+            `Job offer ${updatedJobOffer.id} was updated`,
+        );
+
+        return updatedJobOffer;
     }
 
     async remove(id: number): Promise<void> {
@@ -77,5 +93,9 @@ export class JobOfferService {
             await this.findById(id);
 
         await this.jobOfferRepository.remove(jobOffer);
+
+        this.logger.warn(
+            `Job offer ${id} was deleted`,
+        );
     }
 }
