@@ -17,7 +17,10 @@ import { ApplicationModule } from './application/application.module';
             port: 5432,
             username: 'postgres',
             password: 'qwerty123',
-            database: 'job_Assistant_db',
+            database:
+                process.env.NODE_ENV === 'test'
+                    ? 'job_assistant_test'
+                    : 'job_Assistant_db',
             autoLoadEntities: true,
             synchronize: true,
         }),
