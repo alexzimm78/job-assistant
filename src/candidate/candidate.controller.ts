@@ -1,17 +1,7 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-} from '@nestjs/common';
+import {Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post,} from '@nestjs/common';
 
 import {
+    ApiBasicAuth,
     ApiConflictResponse,
     ApiCreatedResponse,
     ApiNoContentResponse,
@@ -19,23 +9,32 @@ import {
     ApiOkResponse,
     ApiOperation,
     ApiParam,
-    ApiTags,
+    ApiTags
 } from '@nestjs/swagger';
 
-import { CandidateService } from './candidate.service';
-import { CandidateResponseDto } from './dto/candidate-response.dto';
-import { CreateCandidateDto } from './dto/create-candidate.dto';
-import { UpdateCandidateDto } from './dto/update-candidate.dto';
-import { CandidateMapper } from './mapper/candidate.mapper';
+import {CandidateService} from './candidate.service';
+import {CandidateResponseDto} from './dto/candidate-response.dto';
+import {CreateCandidateDto} from './dto/create-candidate.dto';
+import {UpdateCandidateDto} from './dto/update-candidate.dto';
+import {CandidateMapper} from './mapper/candidate.mapper';
+import {Roles} from "../auth/decorators/roles.decorator";
+import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('candidates')
+@ApiBasicAuth()
 @Controller('candidates')
 export class CandidateController {
     constructor(
         private readonly candidateService: CandidateService,
-    ) {}
+    ) {
+    }
 
     @Post()
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Neuen Kandidaten erstellen',
     })
@@ -57,7 +56,13 @@ export class CandidateController {
         return CandidateMapper.toResponseDto(candidate);
     }
 
+
     @Get()
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Alle Kandidaten abrufen',
     })
@@ -73,7 +78,14 @@ export class CandidateController {
         return CandidateMapper.toResponseDtoList(candidates);
     }
 
+
     @Get(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Kandidat nach ID abrufen',
     })
@@ -98,7 +110,13 @@ export class CandidateController {
         return CandidateMapper.toResponseDto(candidate);
     }
 
+
     @Patch(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Kandidaten teilweise aktualisieren',
     })
@@ -129,7 +147,10 @@ export class CandidateController {
         return CandidateMapper.toResponseDto(candidate);
     }
 
+
     @Delete(':id')
+    @Roles(UserRole.ADMIN)
+
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({
         summary: 'Kandidaten löschen',

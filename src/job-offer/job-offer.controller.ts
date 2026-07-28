@@ -13,6 +13,7 @@ import {
 
 import {
     ApiBadRequestResponse,
+    ApiBasicAuth,
     ApiCreatedResponse,
     ApiNoContentResponse,
     ApiNotFoundResponse,
@@ -22,20 +23,31 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 
-import { CreateJobOfferDto } from './dto/create-job-offer.dto';
-import { JobOfferResponseDto } from './dto/job-offer-response.dto';
-import { UpdateJobOfferDto } from './dto/update-job-offer.dto';
-import { JobOfferService } from './job-offer.service';
-import { JobOfferMapper } from './mapper/job-offer.mapper';
+import {CreateJobOfferDto} from './dto/create-job-offer.dto';
+import {JobOfferResponseDto} from './dto/job-offer-response.dto';
+import {UpdateJobOfferDto} from './dto/update-job-offer.dto';
+import {JobOfferService} from './job-offer.service';
+import {JobOfferMapper} from './mapper/job-offer.mapper';
+import {Roles} from "../auth/decorators/roles.decorator";
+import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('job-offers')
+@ApiBasicAuth()
+
 @Controller('job-offers')
 export class JobOfferController {
     constructor(
         private readonly jobOfferService: JobOfferService,
-    ) {}
+    ) {
+    }
+
 
     @Post()
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Neues Stellenangebot erstellen',
     })
@@ -56,7 +68,14 @@ export class JobOfferController {
         return JobOfferMapper.toResponseDto(jobOffer);
     }
 
+
     @Get()
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Alle Stellenangebote abrufen',
     })
@@ -72,7 +91,14 @@ export class JobOfferController {
         return JobOfferMapper.toResponseDtoList(jobOffers);
     }
 
+
     @Get(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Stellenangebot nach ID abrufen',
     })
@@ -98,7 +124,13 @@ export class JobOfferController {
         return JobOfferMapper.toResponseDto(jobOffer);
     }
 
+
     @Patch(':id')
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary:
             'Stellenangebot teilweise aktualisieren',
@@ -130,7 +162,10 @@ export class JobOfferController {
         return JobOfferMapper.toResponseDto(jobOffer);
     }
 
+
     @Delete(':id')
+    @Roles(UserRole.ADMIN)
+
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({
         summary: 'Stellenangebot löschen',

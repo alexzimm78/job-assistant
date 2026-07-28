@@ -6,15 +6,20 @@ import {
     Test,
     TestingModule,
 } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import {getRepositoryToken} from '@nestjs/typeorm';
 import request from 'supertest';
 import {
     DataSource,
     Repository,
 } from 'typeorm';
 
-import { AppModule } from '../src/app.module';
-import { Candidate } from '../src/candidate/candidate.entity';
+import {AppModule} from '../src/app.module';
+import {Candidate} from '../src/candidate/candidate.entity';
+import {
+    createTestAdmin,
+    TEST_LOGIN,
+    TEST_PASSWORD
+} from "./auth-test.helper";
 
 describe('CandidateController Integration Tests', () => {
     let app: INestApplication;
@@ -48,13 +53,16 @@ describe('CandidateController Integration Tests', () => {
 
     beforeEach(async () => {
         await dataSource.query(`
-            TRUNCATE TABLE
-                applications,
-                resumes,
-                job_offers,
-                candidates
-            RESTART IDENTITY CASCADE
-        `);
+        TRUNCATE TABLE
+            applications,
+            resumes,
+            job_offers,
+            candidates,
+            users
+        RESTART IDENTITY CASCADE
+    `);
+
+        await createTestAdmin(dataSource);
     });
 
     it('should create a candidate and save it in the database', async () => {
@@ -71,7 +79,16 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
             .send(dto);
+
+
 
         // Assert
         expect(response.status).toBe(201);
@@ -107,7 +124,11 @@ describe('CandidateController Integration Tests', () => {
         // Act
         const response = await request(
             app.getHttpServer(),
-        ).get(`/candidates/${candidate.id}`);
+        ).get(`/candidates/${candidate.id}`)
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+            );
 
         // Assert
         expect(response.status).toBe(200);
@@ -137,6 +158,10 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+            )
             .send(invalidDto);
 
         // Assert
@@ -174,6 +199,10 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+            )
             .send(duplicateDto);
 
         // Assert

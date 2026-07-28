@@ -1,40 +1,40 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-} from '@nestjs/common';
+import {Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post,} from '@nestjs/common';
 
 import {
+    ApiBasicAuth,
     ApiCreatedResponse,
     ApiNoContentResponse,
     ApiNotFoundResponse,
     ApiOkResponse,
     ApiOperation,
     ApiParam,
-    ApiTags,
+    ApiTags
 } from '@nestjs/swagger';
 
-import { CreateResumeDto } from './dto/create-resume.dto';
-import { ResumeResponseDto } from './dto/resume-response.dto';
-import { UpdateResumeDto } from './dto/update-resume.dto';
-import { ResumeMappers } from './mapper/resume.mappers';
-import { ResumeService } from './resume.service';
+import {CreateResumeDto} from './dto/create-resume.dto';
+import {ResumeResponseDto} from './dto/resume-response.dto';
+import {UpdateResumeDto} from './dto/update-resume.dto';
+import {ResumeMappers} from './mapper/resume.mappers';
+import {ResumeService} from './resume.service';
+import {Roles} from "../auth/decorators/roles.decorator";
+import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('resumes')
+@ApiBasicAuth()
 @Controller('resumes')
 export class ResumeController {
     constructor(
         private readonly resumeService: ResumeService,
-    ) {}
+    ) {
+    }
+
 
     @Post()
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Neuen Lebenslauf erstellen',
     })
@@ -55,7 +55,13 @@ export class ResumeController {
         return ResumeMappers.toResponseDto(resume);
     }
 
+
     @Get()
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Alle Lebensläufe abrufen',
     })
@@ -71,7 +77,14 @@ export class ResumeController {
         return ResumeMappers.toResponseDtoList(resumes);
     }
 
+
     @Get(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Lebenslauf nach ID abrufen',
     })
@@ -96,7 +109,13 @@ export class ResumeController {
         return ResumeMappers.toResponseDto(resume);
     }
 
+
     @Patch(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
+
     @ApiOperation({
         summary: 'Lebenslauf teilweise aktualisieren',
     })
@@ -124,7 +143,13 @@ export class ResumeController {
         return ResumeMappers.toResponseDto(resume);
     }
 
+
     @Delete(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
+
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({
         summary: 'Lebenslauf löschen',

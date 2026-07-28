@@ -12,6 +12,11 @@ import {
     DataSource,
     Repository,
 } from 'typeorm';
+import {
+    createTestAdmin,
+    TEST_LOGIN,
+    TEST_PASSWORD,
+} from './auth-test.helper';
 
 import { AppModule } from '../src/app.module';
 import { Application } from '../src/application/application.entity';
@@ -72,9 +77,12 @@ describe('ApplicationController Integration Tests', () => {
                 applications,
                 resumes,
                 job_offers,
-                candidates
+                candidates,
+                users
             RESTART IDENTITY CASCADE
         `);
+
+        await createTestAdmin(dataSource);
     });
 
     async function createRelatedEntities() {
@@ -138,6 +146,13 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
             .send(dto);
 
         // Assert
@@ -213,7 +228,14 @@ describe('ApplicationController Integration Tests', () => {
         // Act
         const response = await request(
             app.getHttpServer(),
-        ).get(`/applications/${application.id}`);
+        ).get(`/applications/${application.id}`)
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
 
         // Assert
         expect(response.status).toBe(200);
@@ -259,6 +281,13 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
             .send(dto);
 
         // Assert
@@ -309,6 +338,13 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
             .send(duplicateDto);
 
         // Assert

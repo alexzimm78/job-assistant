@@ -6,16 +6,21 @@ import {
     Test,
     TestingModule,
 } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import {getRepositoryToken} from '@nestjs/typeorm';
 import request from 'supertest';
 import {
     DataSource,
     Repository,
 } from 'typeorm';
 
-import { AppModule } from '../src/app.module';
-import { EmploymentType } from '../src/job-offer/enums/employment-type.enum';
-import { JobOffer } from '../src/job-offer/job-offer.entity';
+import {AppModule} from '../src/app.module';
+import {EmploymentType} from '../src/job-offer/enums/employment-type.enum';
+import {JobOffer} from '../src/job-offer/job-offer.entity';
+import {
+    createTestAdmin,
+    TEST_LOGIN,
+    TEST_PASSWORD,
+} from './auth-test.helper';
 
 describe('JobOfferController Integration Tests', () => {
     let app: INestApplication;
@@ -53,9 +58,12 @@ describe('JobOfferController Integration Tests', () => {
                 applications,
                 resumes,
                 job_offers,
-                candidates
+                candidates,
+                users
             RESTART IDENTITY CASCADE
         `);
+
+        await createTestAdmin(dataSource);
     });
 
     it('should create a job offer and save it in the database', async () => {
@@ -75,6 +83,13 @@ describe('JobOfferController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/job-offers')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
             .send(dto);
 
         // Assert
@@ -128,7 +143,14 @@ describe('JobOfferController Integration Tests', () => {
         // Act
         const response = await request(
             app.getHttpServer(),
-        ).get(`/job-offers/${jobOffer.id}`);
+        ).get(`/job-offers/${jobOffer.id}`)
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
 
         // Assert
         expect(response.status).toBe(200);
@@ -170,6 +192,13 @@ describe('JobOfferController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/job-offers')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
             .send(invalidDto);
 
         // Assert
@@ -192,7 +221,14 @@ describe('JobOfferController Integration Tests', () => {
         // Act
         const response = await request(
             app.getHttpServer(),
-        ).get(`/job-offers/${missingJobOfferId}`);
+        ).get(`/job-offers/${missingJobOfferId}`)
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                },
+            )
 
         // Assert
         expect(response.status).toBe(404);

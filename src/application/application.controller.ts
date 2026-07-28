@@ -1,17 +1,7 @@
-import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-} from '@nestjs/common';
+import {Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post,} from '@nestjs/common';
 
 import {
+    ApiBasicAuth,
     ApiConflictResponse,
     ApiCreatedResponse,
     ApiNoContentResponse,
@@ -22,13 +12,16 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 
-import { ApplicationService } from './application.service';
-import { ApplicationResponseDto } from './dto/application-response.dto';
-import { CreateApplicationDto } from './dto/create-application.dto';
-import { UpdateApplicationDto } from './dto/update-application.dto';
-import { ApplicationMapper } from './mapper/application.mapper';
+import {ApplicationService} from './application.service';
+import {ApplicationResponseDto} from './dto/application-response.dto';
+import {CreateApplicationDto} from './dto/create-application.dto';
+import {UpdateApplicationDto} from './dto/update-application.dto';
+import {ApplicationMapper} from './mapper/application.mapper';
+import {Roles} from "../auth/decorators/roles.decorator";
+import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('applications')
+@ApiBasicAuth()
 @Controller('applications')
 export class ApplicationController {
     constructor(
@@ -36,6 +29,10 @@ export class ApplicationController {
     ) {}
 
     @Post()
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.ADMIN,
+    )
     @ApiOperation({
         summary: 'Neue Bewerbung erstellen',
     })
@@ -62,6 +59,10 @@ export class ApplicationController {
     }
 
     @Get()
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
     @ApiOperation({
         summary: 'Alle Bewerbungen abrufen',
     })
@@ -80,6 +81,11 @@ export class ApplicationController {
     }
 
     @Get(':id')
+    @Roles(
+        UserRole.CANDIDATE,
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
     @ApiOperation({
         summary: 'Bewerbung nach ID abrufen',
     })
@@ -105,6 +111,10 @@ export class ApplicationController {
     }
 
     @Patch(':id')
+    @Roles(
+        UserRole.RECRUITER,
+        UserRole.ADMIN,
+    )
     @ApiOperation({
         summary: 'Bewerbung teilweise aktualisieren',
     })
@@ -137,6 +147,7 @@ export class ApplicationController {
     }
 
     @Delete(':id')
+    @Roles(UserRole.ADMIN)
     @HttpCode(HttpStatus.NO_CONTENT)
     @ApiOperation({
         summary: 'Bewerbung löschen',

@@ -6,16 +6,22 @@ import {
     Test,
     TestingModule,
 } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import {getRepositoryToken} from '@nestjs/typeorm';
 import request from 'supertest';
 import {
     DataSource,
     Repository,
 } from 'typeorm';
 
-import { AppModule } from '../src/app.module';
-import { Candidate } from '../src/candidate/candidate.entity';
-import { Resume } from '../src/resume/resume.entity';
+import {AppModule} from '../src/app.module';
+import {Candidate} from '../src/candidate/candidate.entity';
+import {Resume} from '../src/resume/resume.entity';
+import {
+    createTestAdmin,
+    TEST_LOGIN,
+    TEST_PASSWORD,
+} from './auth-test.helper';
+
 
 describe('ResumeController Integration Tests', () => {
     let app: INestApplication;
@@ -58,9 +64,12 @@ describe('ResumeController Integration Tests', () => {
                 applications,
                 resumes,
                 job_offers,
-                candidates
+                candidates,
+                users
             RESTART IDENTITY CASCADE
         `);
+
+        await createTestAdmin(dataSource);
     });
 
     it('should create a resume and save it in the database', async () => {
@@ -89,6 +98,13 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
             .send(dto);
 
         // Assert
@@ -142,7 +158,14 @@ describe('ResumeController Integration Tests', () => {
         // Act
         const response = await request(
             app.getHttpServer(),
-        ).get(`/resumes/${resume.id}`);
+        ).get(`/resumes/${resume.id}`)
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
 
         // Assert
         expect(response.status).toBe(200);
@@ -175,6 +198,13 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
             .send(dto);
 
         // Assert
@@ -212,6 +242,13 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
+            .auth(
+                TEST_LOGIN,
+                TEST_PASSWORD,
+                {
+                    type: 'basic',
+                }
+            )
             .send(invalidDto);
 
         // Assert

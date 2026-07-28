@@ -50,6 +50,7 @@ async function bootstrap() {
             'API für Kandidaten, Lebensläufe, Stellenangebote und Bewerbungen',
         )
         .setVersion('1.0')
+        .addBasicAuth()
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
