@@ -17,14 +17,14 @@ import {AppModule} from '../src/app.module';
 import {Candidate} from '../src/candidate/candidate.entity';
 import {
     createTestAdmin,
-    TEST_LOGIN,
-    TEST_PASSWORD
-} from "./auth-test.helper";
+    loginTestAdmin,
+} from './auth-test.helper';
 
 describe('CandidateController Integration Tests', () => {
     let app: INestApplication;
     let candidateRepository: Repository<Candidate>;
     let dataSource: DataSource;
+    let accessToken: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule =
@@ -63,6 +63,8 @@ describe('CandidateController Integration Tests', () => {
     `);
 
         await createTestAdmin(dataSource);
+        accessToken =
+            await loginTestAdmin(app);
     });
 
     it('should create a candidate and save it in the database', async () => {
@@ -79,12 +81,9 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(dto);
 
@@ -125,10 +124,10 @@ describe('CandidateController Integration Tests', () => {
         const response = await request(
             app.getHttpServer(),
         ).get(`/candidates/${candidate.id}`)
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-            );
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
+            )
 
         // Assert
         expect(response.status).toBe(200);
@@ -158,9 +157,9 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(invalidDto);
 
@@ -199,9 +198,9 @@ describe('CandidateController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/candidates')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(duplicateDto);
 

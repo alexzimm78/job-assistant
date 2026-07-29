@@ -10,14 +10,14 @@ import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 
 import { UserRole } from '../../user/enums/user-role.enum';
-import { User } from '../../user/user.entity';
 
 import {
     ROLES_KEY,
 } from '../decorators/roles.decorator';
+import { TokenPayload } from '../interfaces/token-payload.interface';
 
 type AuthenticatedRequest = Request & {
-    user?: User;
+    user?: TokenPayload;
 };
 
 @Injectable()

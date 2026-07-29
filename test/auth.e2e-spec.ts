@@ -27,7 +27,7 @@ import {
     TEST_PASSWORD,
 } from './auth-test.helper';
 
-describe('Authentication and Authorization Tests', () => {
+describe('JWT Authentication and Authorization Tests', () => {
     let app: INestApplication;
     let dataSource: DataSource;
     let userRepository: Repository<User>;
@@ -96,13 +96,36 @@ describe('Authentication and Authorization Tests', () => {
             });
 
         expect(savedUser).not.toBeNull();
-        expect(savedUser?.passwordHash).toBeDefined();
-        expect(savedUser?.passwordHash).not.toBe(
-            dto.password,
-        );
+        expect(
+            savedUser?.passwordHash,
+        ).toBeDefined();
+        expect(
+            savedUser?.passwordHash,
+        ).not.toBe(dto.password);
     });
 
-    it('should return 401 without Basic Authentication', async () => {
+    it('should login and return JWT tokens', async () => {
+        await createTestAdmin(dataSource);
+
+        const response = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/login')
+            .send({
+                login: TEST_LOGIN,
+                password: TEST_PASSWORD,
+            });
+
+        expect(response.status).toBe(200);
+        expect(
+            response.body.accessToken,
+        ).toEqual(expect.any(String));
+        expect(
+            response.body.refreshToken,
+        ).toEqual(expect.any(String));
+    });
+
+    it('should return 401 without Access Token', async () => {
         const response = await request(
             app.getHttpServer(),
         ).get('/users');
@@ -116,16 +139,19 @@ describe('Authentication and Authorization Tests', () => {
         const response = await request(
             app.getHttpServer(),
         )
-            .get('/users')
-            .auth(
-                TEST_LOGIN,
-                'wrong-password',
-                {
-                    type: 'basic',
-                },
-            );
+            .post('/auth/login')
+            .send({
+                login: TEST_LOGIN,
+                password: 'wrong-password',
+            });
 
         expect(response.status).toBe(401);
+        expect(
+            response.body.accessToken,
+        ).toBeUndefined();
+        expect(
+            response.body.refreshToken,
+        ).toBeUndefined();
     });
 
     it('should return 403 for a candidate', async () => {
@@ -137,18 +163,29 @@ describe('Authentication and Authorization Tests', () => {
                 login: 'candidate',
                 password: 'candidate123',
                 role: UserRole.CANDIDATE,
-            });
+            })
+            .expect(201);
+
+        const loginResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/login')
+            .send({
+                login: 'candidate',
+                password: 'candidate123',
+            })
+            .expect(200);
+
+        const accessToken =
+            loginResponse.body.accessToken as string;
 
         const response = await request(
             app.getHttpServer(),
         )
             .get('/users')
-            .auth(
-                'candidate',
-                'candidate123',
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             );
 
         expect(response.status).toBe(403);
@@ -157,16 +194,26 @@ describe('Authentication and Authorization Tests', () => {
     it('should allow access for an admin', async () => {
         await createTestAdmin(dataSource);
 
+        const loginResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/login')
+            .send({
+                login: TEST_LOGIN,
+                password: TEST_PASSWORD,
+            })
+            .expect(200);
+
+        const accessToken =
+            loginResponse.body.accessToken as string;
+
         const response = await request(
             app.getHttpServer(),
         )
             .get('/users')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             );
 
         expect(response.status).toBe(200);
@@ -174,6 +221,79 @@ describe('Authentication and Authorization Tests', () => {
         expect(response.body[0].role).toBe(
             UserRole.ADMIN,
         );
+    });
+
+    it('should refresh JWT tokens', async () => {
+        await createTestAdmin(dataSource);
+
+        const loginResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/login')
+            .send({
+                login: TEST_LOGIN,
+                password: TEST_PASSWORD,
+            })
+            .expect(200);
+
+        const refreshToken =
+            loginResponse.body.refreshToken as string;
+
+        const response = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/refresh')
+            .send({
+                refreshToken,
+            });
+
+        expect(response.status).toBe(200);
+        expect(
+            response.body.accessToken,
+        ).toEqual(expect.any(String));
+        expect(
+            response.body.refreshToken,
+        ).toEqual(expect.any(String));
+    });
+
+    it('should reject Refresh Token after logout', async () => {
+        await createTestAdmin(dataSource);
+
+        const loginResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/login')
+            .send({
+                login: TEST_LOGIN,
+                password: TEST_PASSWORD,
+            })
+            .expect(200);
+
+        const refreshToken =
+            loginResponse.body.refreshToken as string;
+
+        const logoutResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/logout')
+            .send({
+                refreshToken,
+            });
+
+        expect(logoutResponse.status).toBe(200);
+        expect(logoutResponse.body.message).toBe(
+            'Abmeldung erfolgreich',
+        );
+
+        const refreshResponse = await request(
+            app.getHttpServer(),
+        )
+            .post('/auth/refresh')
+            .send({
+                refreshToken,
+            });
+
+        expect(refreshResponse.status).toBe(401);
     });
 
     afterAll(async () => {

@@ -1,7 +1,7 @@
 import {Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post,} from '@nestjs/common';
 
 import {
-    ApiBasicAuth,
+ApiBearerAuth,
     ApiCreatedResponse,
     ApiNoContentResponse,
     ApiNotFoundResponse,
@@ -20,7 +20,7 @@ import {Roles} from "../auth/decorators/roles.decorator";
 import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('resumes')
-@ApiBasicAuth()
+@ApiBearerAuth('access-token')
 @Controller('resumes')
 export class ResumeController {
     constructor(

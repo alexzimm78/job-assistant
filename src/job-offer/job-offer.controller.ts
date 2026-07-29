@@ -13,7 +13,7 @@ import {
 
 import {
     ApiBadRequestResponse,
-    ApiBasicAuth,
+    ApiBearerAuth,
     ApiCreatedResponse,
     ApiNoContentResponse,
     ApiNotFoundResponse,
@@ -32,7 +32,7 @@ import {Roles} from "../auth/decorators/roles.decorator";
 import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('job-offers')
-@ApiBasicAuth()
+@ApiBearerAuth('access-token')
 
 @Controller('job-offers')
 export class JobOfferController {

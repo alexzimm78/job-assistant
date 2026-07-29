@@ -6,7 +6,7 @@ import {
     Test,
     TestingModule,
 } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import {getRepositoryToken} from '@nestjs/typeorm';
 import request from 'supertest';
 import {
     DataSource,
@@ -14,17 +14,16 @@ import {
 } from 'typeorm';
 import {
     createTestAdmin,
-    TEST_LOGIN,
-    TEST_PASSWORD,
+    loginTestAdmin,
 } from './auth-test.helper';
 
-import { AppModule } from '../src/app.module';
-import { Application } from '../src/application/application.entity';
-import { ApplicationStatus } from '../src/application/enums/application-status.enum';
-import { Candidate } from '../src/candidate/candidate.entity';
-import { EmploymentType } from '../src/job-offer/enums/employment-type.enum';
-import { JobOffer } from '../src/job-offer/job-offer.entity';
-import { Resume } from '../src/resume/resume.entity';
+import {AppModule} from '../src/app.module';
+import {Application} from '../src/application/application.entity';
+import {ApplicationStatus} from '../src/application/enums/application-status.enum';
+import {Candidate} from '../src/candidate/candidate.entity';
+import {EmploymentType} from '../src/job-offer/enums/employment-type.enum';
+import {JobOffer} from '../src/job-offer/job-offer.entity';
+import {Resume} from '../src/resume/resume.entity';
 
 describe('ApplicationController Integration Tests', () => {
     let app: INestApplication;
@@ -33,6 +32,7 @@ describe('ApplicationController Integration Tests', () => {
     let resumeRepository: Repository<Resume>;
     let jobOfferRepository: Repository<JobOffer>;
     let dataSource: DataSource;
+    let accessToken: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule =
@@ -83,6 +83,9 @@ describe('ApplicationController Integration Tests', () => {
         `);
 
         await createTestAdmin(dataSource);
+
+        accessToken =
+            await loginTestAdmin(app);
     });
 
     async function createRelatedEntities() {
@@ -146,12 +149,9 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(dto);
 
@@ -229,12 +229,9 @@ describe('ApplicationController Integration Tests', () => {
         const response = await request(
             app.getHttpServer(),
         ).get(`/applications/${application.id}`)
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
 
         // Assert
@@ -281,12 +278,9 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(dto);
 
@@ -338,12 +332,9 @@ describe('ApplicationController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/applications')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(duplicateDto);
 

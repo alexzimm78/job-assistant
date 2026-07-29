@@ -50,7 +50,16 @@ async function bootstrap() {
             'API für Kandidaten, Lebensläufe, Stellenangebote und Bewerbungen',
         )
         .setVersion('1.0')
-        .addBasicAuth()
+        .addBearerAuth(
+            {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description:
+                    'JWT Access Token eingeben',
+            },
+            'access-token',
+        )
         .build();
 
     const document = SwaggerModule.createDocument(app, config);

@@ -18,8 +18,7 @@ import {Candidate} from '../src/candidate/candidate.entity';
 import {Resume} from '../src/resume/resume.entity';
 import {
     createTestAdmin,
-    TEST_LOGIN,
-    TEST_PASSWORD,
+    loginTestAdmin,
 } from './auth-test.helper';
 
 
@@ -28,6 +27,7 @@ describe('ResumeController Integration Tests', () => {
     let candidateRepository: Repository<Candidate>;
     let resumeRepository: Repository<Resume>;
     let dataSource: DataSource;
+    let accessToken: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule =
@@ -70,6 +70,9 @@ describe('ResumeController Integration Tests', () => {
         `);
 
         await createTestAdmin(dataSource);
+
+        accessToken =
+            await loginTestAdmin(app);
     });
 
     it('should create a resume and save it in the database', async () => {
@@ -98,12 +101,10 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
+
             )
             .send(dto);
 
@@ -159,12 +160,9 @@ describe('ResumeController Integration Tests', () => {
         const response = await request(
             app.getHttpServer(),
         ).get(`/resumes/${resume.id}`)
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
 
         // Assert
@@ -198,12 +196,9 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(dto);
 
@@ -242,12 +237,9 @@ describe('ResumeController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/resumes')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(invalidDto);
 

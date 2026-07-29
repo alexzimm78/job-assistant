@@ -1,4 +1,10 @@
+import {
+    INestApplication,
+} from '@nestjs/common';
+
 import * as bcrypt from 'bcrypt';
+
+import request from 'supertest';
 
 import { DataSource } from 'typeorm';
 
@@ -27,4 +33,20 @@ export async function createTestAdmin(
     });
 
     return userRepository.save(user);
+}
+
+export async function loginTestAdmin(
+    app: INestApplication,
+): Promise<string> {
+    const response = await request(
+        app.getHttpServer(),
+    )
+        .post('/auth/login')
+        .send({
+            login: TEST_LOGIN,
+            password: TEST_PASSWORD,
+        })
+        .expect(200);
+
+    return response.body.accessToken as string;
 }

@@ -20,6 +20,13 @@ export class User {
     passwordHash: string;
 
     @Column({
+        type: 'varchar',
+        nullable: true,
+        select: false,
+    })
+    refreshTokenHash: string | null;
+
+    @Column({
         type: 'enum',
         enum: UserRole,
         default: UserRole.CANDIDATE,

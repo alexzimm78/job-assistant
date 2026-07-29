@@ -1,7 +1,7 @@
 import {Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post,} from '@nestjs/common';
 
 import {
-    ApiBasicAuth,
+ApiBearerAuth,
     ApiConflictResponse,
     ApiCreatedResponse,
     ApiNoContentResponse,
@@ -21,7 +21,7 @@ import {Roles} from "../auth/decorators/roles.decorator";
 import {UserRole} from "../user/enums/user-role.enum";
 
 @ApiTags('applications')
-@ApiBasicAuth()
+@ApiBearerAuth('access-token')
 @Controller('applications')
 export class ApplicationController {
     constructor(

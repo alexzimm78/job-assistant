@@ -18,14 +18,14 @@ import {EmploymentType} from '../src/job-offer/enums/employment-type.enum';
 import {JobOffer} from '../src/job-offer/job-offer.entity';
 import {
     createTestAdmin,
-    TEST_LOGIN,
-    TEST_PASSWORD,
+    loginTestAdmin,
 } from './auth-test.helper';
 
 describe('JobOfferController Integration Tests', () => {
     let app: INestApplication;
     let jobOfferRepository: Repository<JobOffer>;
     let dataSource: DataSource;
+    let accessToken: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule =
@@ -64,6 +64,9 @@ describe('JobOfferController Integration Tests', () => {
         `);
 
         await createTestAdmin(dataSource);
+
+        accessToken =
+            await loginTestAdmin(app);
     });
 
     it('should create a job offer and save it in the database', async () => {
@@ -83,12 +86,9 @@ describe('JobOfferController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/job-offers')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                }
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(dto);
 
@@ -144,12 +144,9 @@ describe('JobOfferController Integration Tests', () => {
         const response = await request(
             app.getHttpServer(),
         ).get(`/job-offers/${jobOffer.id}`)
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
 
         // Assert
@@ -192,12 +189,9 @@ describe('JobOfferController Integration Tests', () => {
             app.getHttpServer(),
         )
             .post('/job-offers')
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
             .send(invalidDto);
 
@@ -222,12 +216,9 @@ describe('JobOfferController Integration Tests', () => {
         const response = await request(
             app.getHttpServer(),
         ).get(`/job-offers/${missingJobOfferId}`)
-            .auth(
-                TEST_LOGIN,
-                TEST_PASSWORD,
-                {
-                    type: 'basic',
-                },
+            .set(
+                'Authorization',
+                `Bearer ${accessToken}`,
             )
 
         // Assert

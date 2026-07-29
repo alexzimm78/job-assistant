@@ -9,26 +9,26 @@ import { Reflector } from '@nestjs/core';
 
 import { Request } from 'express';
 
-import { User } from '../../user/user.entity';
-import { AuthService } from '../auth.service';
 import {
     IS_PUBLIC_KEY,
 } from '../decorators/public.decorator';
+import { TokenPayload } from '../interfaces/token-payload.interface';
+import { TokensService } from '../tokens.service';
 
-type AuthenticatedRequest = Request & {
-    user?: User;
+export type AuthenticatedRequest = Request & {
+    user?: TokenPayload;
 };
 
 @Injectable()
 export class AuthGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
-        private readonly authService: AuthService,
+        private readonly tokensService: TokensService,
     ) {}
 
-    async canActivate(
+    canActivate(
         context: ExecutionContext,
-    ): Promise<boolean> {
+    ): boolean {
         const isPublic =
             this.reflector.getAllAndOverride<boolean>(
                 IS_PUBLIC_KEY,
@@ -47,63 +47,43 @@ export class AuthGuard implements CanActivate {
                 .switchToHttp()
                 .getRequest<AuthenticatedRequest>();
 
+        const accessToken =
+            this.extractBearerToken(request);
+
+        const payload =
+            this.tokensService.verifyAccessToken(
+                accessToken,
+            );
+
+        request.user = payload;
+
+        return true;
+    }
+
+    private extractBearerToken(
+        request: Request,
+    ): string {
         const authorization =
             request.headers.authorization;
 
+        if (!authorization) {
+            throw new UnauthorizedException(
+                'Access Token ist erforderlich',
+            );
+        }
+
+        const [type, token] =
+            authorization.split(' ');
+
         if (
-            !authorization ||
-            !authorization.startsWith('Basic ')
+            type !== 'Bearer' ||
+            !token
         ) {
             throw new UnauthorizedException(
-                'Basic Authentication ist erforderlich',
+                'Bearer Access Token ist erforderlich',
             );
         }
 
-        const encodedCredentials =
-            authorization
-                .slice('Basic '.length)
-                .trim();
-
-        const decodedCredentials =
-            Buffer.from(
-                encodedCredentials,
-                'base64',
-            ).toString('utf8');
-
-        const separatorIndex =
-            decodedCredentials.indexOf(':');
-
-        if (separatorIndex < 1) {
-            throw new UnauthorizedException(
-                'Ungültige Basic-Authentication-Daten',
-            );
-        }
-
-        const login =
-            decodedCredentials.slice(
-                0,
-                separatorIndex,
-            );
-
-        const password =
-            decodedCredentials.slice(
-                separatorIndex + 1,
-            );
-
-        if (!password) {
-            throw new UnauthorizedException(
-                'Login und Passwort sind erforderlich',
-            );
-        }
-
-        const user =
-            await this.authService.authenticate(
-                login,
-                password,
-            );
-
-        request.user = user;
-
-        return true;
+        return token;
     }
 }

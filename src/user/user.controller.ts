@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import {
-    ApiBasicAuth,
+ApiBearerAuth,
     ApiConflictResponse,
     ApiCreatedResponse,
     ApiOkResponse,
@@ -55,7 +55,7 @@ export class UserController {
 
     @Get()
     @Roles(UserRole.ADMIN)
-    @ApiBasicAuth()
+    @ApiBearerAuth('access-token')
     @ApiOperation({
         summary: 'Alle Benutzer abrufen',
     })

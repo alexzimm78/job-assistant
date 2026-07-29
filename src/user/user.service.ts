@@ -60,6 +60,62 @@ export class UserService {
         });
     }
 
+    findById(id: number): Promise<User | null> {
+        return this.userRepository.findOne({
+            where: {
+                id,
+            },
+        });
+    }
+
+    async saveRefreshToken(
+        userId: number,
+        refreshToken: string,
+    ): Promise<void> {
+        const refreshTokenHash =
+            await bcrypt.hash(refreshToken, 10);
+
+        await this.userRepository.update(
+            userId,
+            {
+                refreshTokenHash,
+            },
+        );
+    }
+
+    async validateRefreshToken(
+        userId: number,
+        refreshToken: string,
+    ): Promise<boolean> {
+        const user = await this.userRepository
+            .createQueryBuilder('user')
+            .addSelect('user.refreshTokenHash')
+            .where('user.id = :userId', {
+                userId,
+            })
+            .getOne();
+
+        if (!user?.refreshTokenHash) {
+            return false;
+        }
+
+        return bcrypt.compare(
+            refreshToken,
+            user.refreshTokenHash,
+        );
+    }
+
+    async clearRefreshToken(
+        userId: number,
+    ): Promise<void> {
+        await this.userRepository.update(
+            userId,
+            {
+                refreshTokenHash: null,
+            },
+        );
+    }
+
     findAll(): Promise<User[]> {
         return this.userRepository.find();
     }
