@@ -60,6 +60,16 @@ export class UserService {
         });
     }
 
+    findByEmail(
+        email: string,
+    ): Promise<User | null> {
+        return this.userRepository.findOne({
+            where: {
+                email,
+            },
+        });
+    }
+
     findById(id: number): Promise<User | null> {
         return this.userRepository.findOne({
             where: {

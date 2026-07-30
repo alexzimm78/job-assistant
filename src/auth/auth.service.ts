@@ -45,6 +45,12 @@ export class AuthService {
             );
         }
 
+        if (!user.isActive) {
+            throw new UnauthorizedException(
+                'Das Benutzerkonto wurde noch nicht aktiviert',
+            );
+        }
+
         return user;
     }
 
@@ -101,6 +107,12 @@ export class AuthService {
         if (!user) {
             throw new UnauthorizedException(
                 'Benutzer wurde nicht gefunden',
+            );
+        }
+
+        if (!user.isActive) {
+            throw new UnauthorizedException(
+                'Das Benutzerkonto ist nicht aktiv',
             );
         }
 

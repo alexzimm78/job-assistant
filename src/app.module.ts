@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { CandidateModule } from './candidate/candidate.module';
+import { EmailModule } from './email/email.module';
 import { JobOfferModule } from './job-offer/job-offer.module';
 import { ResumeModule } from './resume/resume.module';
 import { UserModule } from './user/user.module';
@@ -40,6 +41,7 @@ import { UserModule } from './user/user.module';
         ApplicationModule,
         UserModule,
         AuthModule,
+        EmailModule,
     ],
 
     controllers: [AppController],

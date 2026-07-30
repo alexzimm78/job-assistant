@@ -16,6 +16,13 @@ export class User {
     })
     login: string;
 
+    @Column({
+        type: 'varchar',
+        unique: true,
+        nullable: true,
+    })
+    email: string | null;
+
     @Column()
     passwordHash: string;
 
@@ -32,4 +39,9 @@ export class User {
         default: UserRole.CANDIDATE,
     })
     role: UserRole;
+
+    @Column({
+        default: false,
+    })
+    isActive: boolean;
 }
