@@ -14,6 +14,7 @@ import { EmailModule } from './email/email.module';
 import { JobOfferModule } from './job-offer/job-offer.module';
 import { ResumeModule } from './resume/resume.module';
 import { UserModule } from './user/user.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
     imports: [
@@ -42,6 +43,7 @@ import { UserModule } from './user/user.module';
         UserModule,
         AuthModule,
         EmailModule,
+        AiModule,
     ],
 
     controllers: [AppController],
