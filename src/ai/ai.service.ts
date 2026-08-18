@@ -10,6 +10,9 @@ import axios, {
     isAxiosError,
 } from 'axios';
 
+import { GeminiEmbeddingRequest } from '../embeddings/models/gemini-embedding-request.model';
+import { GeminiEmbeddingResponse } from '../embeddings/models/gemini-embedding-response.model';
+
 import { AskAiRequestDto } from './dto/ask-ai-request.dto';
 import { AskAiResponseDto } from './dto/ask-ai-response.dto';
 import { GeminiRequestMapper } from './mapper/gemini-request.mapper';
@@ -79,6 +82,55 @@ export class AiService {
 
             throw new BadGatewayException(
                 'Die Antwort des KI-Dienstes konnte nicht abgerufen werden',
+            );
+        }
+    }
+
+    async createEmbedding(
+        request: GeminiEmbeddingRequest,
+    ): Promise<GeminiEmbeddingResponse> {
+        const apiKey =
+            this.configService.getOrThrow<string>(
+                'GEMINI_API_KEY',
+            );
+
+        const url =
+            `https://generativelanguage.googleapis.com/` +
+            `v1beta/${request.model}:embedContent`;
+
+        try {
+            const response:
+                AxiosResponse<GeminiEmbeddingResponse> =
+                await axios.post<
+                    GeminiEmbeddingResponse,
+                    AxiosResponse<GeminiEmbeddingResponse>,
+                    GeminiEmbeddingRequest
+                >(
+                    url,
+                    request,
+                    {
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+                            'x-goog-api-key': apiKey,
+                        },
+                    },
+                );
+
+            return response.data;
+        } catch (error: unknown) {
+            if (isAxiosError(error)) {
+                this.logger.error(
+                    `Gemini Embedding API Fehler: ${error.message}`,
+                );
+            } else {
+                this.logger.error(
+                    'Unbekannter Fehler beim Gemini-Embedding-Aufruf',
+                );
+            }
+
+            throw new BadGatewayException(
+                'Die Embeddings konnten nicht abgerufen werden',
             );
         }
     }
