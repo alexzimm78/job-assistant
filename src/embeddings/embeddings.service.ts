@@ -60,7 +60,9 @@ export class EmbeddingsService {
         );
 
         this.logger.log(
-            `Embeddings: ${JSON.stringify(embeddings)}`,
+            `Embedding-Dimension: ${
+                embeddings[0]?.length ?? 0
+            }`,
         );
 
         return embeddings;

@@ -16,6 +16,7 @@ import { ResumeModule } from './resume/resume.module';
 import { UserModule } from './user/user.module';
 import { AiModule } from './ai/ai.module';
 import { EmbeddingsModule } from './embeddings/embeddings.module';
+import { VectorStorageModule } from './vector-storage/vector-storage.module';
 
 @Module({
     imports: [
@@ -46,6 +47,7 @@ import { EmbeddingsModule } from './embeddings/embeddings.module';
         EmailModule,
         AiModule,
         EmbeddingsModule,
+        VectorStorageModule,
     ],
 
     controllers: [AppController],
