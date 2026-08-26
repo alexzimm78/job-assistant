@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/guards/auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { CandidateModule } from './candidate/candidate.module';
+import { DocumentIngestionModule } from './document-ingestion/document-ingestion.module';
 import { EmailModule } from './email/email.module';
 import { JobOfferModule } from './job-offer/job-offer.module';
 import { ResumeModule } from './resume/resume.module';
@@ -17,6 +18,7 @@ import { UserModule } from './user/user.module';
 import { AiModule } from './ai/ai.module';
 import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { VectorStorageModule } from './vector-storage/vector-storage.module';
+
 
 @Module({
     imports: [
@@ -48,6 +50,7 @@ import { VectorStorageModule } from './vector-storage/vector-storage.module';
         AiModule,
         EmbeddingsModule,
         VectorStorageModule,
+        DocumentIngestionModule,
     ],
 
     controllers: [AppController],
