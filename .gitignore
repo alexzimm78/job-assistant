@@ -59,4 +59,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # ZIP-Dateien ignoriren
 *.zip
 
+# Lokale Testdokumente
+test-files/
+
 
