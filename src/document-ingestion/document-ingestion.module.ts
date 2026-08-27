@@ -5,6 +5,7 @@ import { VectorStorageModule } from '../vector-storage/vector-storage.module';
 import { ChunkingService } from './chunking.service';
 import { DocumentIngestionController } from './document-ingestion.controller';
 import { DocumentIngestionService } from './document-ingestion.service';
+import { TextExtractorService } from './text-extractor.service';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { DocumentIngestionService } from './document-ingestion.service';
     providers: [
         ChunkingService,
         DocumentIngestionService,
+        TextExtractorService,
     ],
     exports: [
         DocumentIngestionService,
