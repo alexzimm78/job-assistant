@@ -9,6 +9,7 @@ import {
 } from '@qdrant/js-client-rest';
 
 import { QdrantPoint } from './models/qdrant-point.model';
+import { QdrantSearchResult } from './models/qdrant-search-result.model';
 
 @Injectable()
 export class QdrantClient implements OnModuleInit {
@@ -99,6 +100,37 @@ export class QdrantClient implements OnModuleInit {
 
         this.logger.log(
             `Points gespeichert: ${points.length}`,
+        );
+    }
+
+    async search(
+        vector: number[],
+        limit: number,
+    ): Promise<QdrantSearchResult[]> {
+        const response =
+            await this.client.query(
+                this.collectionName,
+                {
+                    query: vector,
+                    limit,
+                    with_payload: true,
+                    with_vector: false,
+                },
+            );
+
+        const results = response.points;
+
+        this.logger.log(
+            `Semantische Suchergebnisse: ${results.length}`,
+        );
+
+        return results.map(
+            (result): QdrantSearchResult => ({
+                id: result.id,
+                score: result.score,
+                payload:
+                    result.payload ?? {},
+            }),
         );
     }
 }

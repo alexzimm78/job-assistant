@@ -9,9 +9,11 @@ import {
 import { EmbeddingsService } from '../embeddings/embeddings.service';
 
 import { SaveVectorDocumentsRequestDto } from './dto/save-vector-documents-request.dto';
+import { SearchVectorDocumentsRequestDto } from './dto/search-vector-documents-request.dto';
 import { VectorDocumentDto } from './dto/vector-document.dto';
 import { QdrantClient } from './qdrant/qdrant.client';
 import { QdrantPoint } from './qdrant/models/qdrant-point.model';
+import { QdrantSearchResult } from './qdrant/models/qdrant-search-result.model';
 
 @Injectable()
 export class VectorStorageService {
@@ -88,5 +90,35 @@ export class VectorStorageService {
         );
 
         return points.length;
+    }
+
+    async searchDocuments(
+        dto: SearchVectorDocumentsRequestDto,
+    ): Promise<QdrantSearchResult[]> {
+        const embeddings =
+            await this.embeddingsService
+                .createEmbeddings({
+                    texts: [dto.query],
+                });
+
+        const queryVector = embeddings[0];
+
+        if (!queryVector) {
+            throw new InternalServerErrorException(
+                'Für die Suchanfrage wurde kein Embedding erstellt',
+            );
+        }
+
+        const results =
+            await this.qdrantClient.search(
+                queryVector,
+                dto.limit,
+            );
+
+        this.logger.log(
+            `Semantische Suche abgeschlossen: ${results.length} Ergebnisse`,
+        );
+
+        return results;
     }
 }

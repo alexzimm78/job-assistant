@@ -8,6 +8,7 @@ import {
     ApiBadGatewayResponse,
     ApiBadRequestResponse,
     ApiCreatedResponse,
+    ApiOkResponse,
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
@@ -15,6 +16,8 @@ import {
 import { Public } from '../auth/decorators/public.decorator';
 
 import { SaveVectorDocumentsRequestDto } from './dto/save-vector-documents-request.dto';
+import { SearchVectorDocumentsRequestDto } from './dto/search-vector-documents-request.dto';
+import { QdrantSearchResult } from './qdrant/models/qdrant-search-result.model';
 import { VectorStorageService } from './vector-storage.service';
 
 @ApiTags('vector-storage')
@@ -61,5 +64,46 @@ export class VectorStorageController {
         return {
             saved,
         };
+    }
+
+    @Public()
+    @Post('search')
+    @ApiOperation({
+        summary:
+            'Dokumente in Qdrant semantisch durchsuchen',
+    })
+    @ApiOkResponse({
+        description:
+            'Die ähnlichsten Dokumente wurden gefunden',
+        schema: {
+            example: [
+                {
+                    id: '9e0c6dc5-1f66-4d4f-9d05-2fb882d1de25',
+                    score: 0.87,
+                    payload: {
+                        title: 'lebenslauf.pdf – Teil 2',
+                        content:
+                            'Erfahrung mit NestJS und PostgreSQL',
+                        category: 'document-chunk',
+                        source: 'lebenslauf.pdf',
+                    },
+                },
+            ],
+        },
+    })
+    @ApiBadRequestResponse({
+        description:
+            'Suchtext oder Limit ist ungültig',
+    })
+    @ApiBadGatewayResponse({
+        description:
+            'Fehler bei der Verbindung zum AI API oder zu Qdrant',
+    })
+    async searchDocuments(
+        @Body()
+        dto: SearchVectorDocumentsRequestDto,
+    ): Promise<QdrantSearchResult[]> {
+        return this.vectorStorageService
+            .searchDocuments(dto);
     }
 }
