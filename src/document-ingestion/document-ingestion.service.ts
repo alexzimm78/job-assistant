@@ -4,6 +4,7 @@ import { VectorDocumentDto } from '../vector-storage/dto/vector-document.dto';
 import { VectorStorageService } from '../vector-storage/vector-storage.service';
 
 import { ChunkingService } from './chunking.service';
+import { CleanService } from './clean.service';
 import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
 import { TextExtractorService } from './text-extractor.service';
 
@@ -12,6 +13,9 @@ export class DocumentIngestionService {
     constructor(
         private readonly chunkingService:
         ChunkingService,
+
+        private readonly cleanService:
+        CleanService,
 
         private readonly vectorStorageService:
         VectorStorageService,
@@ -72,7 +76,7 @@ export class DocumentIngestionService {
     }
 
     // --------------------------------------------------
-    // TEXT CHUNKEN UND IN QDRANT SPEICHERN
+    // TEXT BEREINIGEN, CHUNKEN UND IN QDRANT SPEICHERN
     // --------------------------------------------------
 
     async ingestDocument(
@@ -84,9 +88,14 @@ export class DocumentIngestionService {
         const chunkOverlap =
             dto.chunkOverlap ?? 200;
 
+        const cleanedText =
+            this.cleanService.cleanText(
+                dto.text,
+            );
+
         const chunks =
             this.chunkingService.splitText(
-                dto.text,
+                cleanedText,
                 chunkSize,
                 chunkOverlap,
             );

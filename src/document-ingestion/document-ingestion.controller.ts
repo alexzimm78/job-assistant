@@ -9,6 +9,7 @@ import {
 import {
     ApiBadGatewayResponse,
     ApiBadRequestResponse,
+    ApiBody,
     ApiConsumes,
     ApiCreatedResponse,
     ApiOperation,
@@ -116,6 +117,20 @@ export class DocumentIngestionController {
         FileInterceptor('file'),
     )
     @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
+            required: [
+                'file',
+            ],
+        },
+    })
     @ApiOperation({
         summary:
             'TXT-, PDF- oder DOCX-Datei hochladen und in Qdrant speichern',
