@@ -25,7 +25,7 @@ export class DocumentIngestionService {
     ) {}
 
     // --------------------------------------------------
-    // DATEI ÜBER DATEIPFAD EINLESEN
+    // TXT-DATEI ÜBER DATEIPFAD EINLESEN
     // --------------------------------------------------
 
     async ingestFile(
@@ -33,71 +33,58 @@ export class DocumentIngestionService {
     ): Promise<number> {
         const text =
             await this.textExtractorService
-                .extractText(filePath);
+                .extractText(
+                    filePath,
+                );
 
         const fileName =
             filePath
                 .split(/[\\/]/)
                 .pop()
-            ?? 'unknown-file';
+            ?? 'unknown-file.txt';
 
-        const dto: IngestDocumentRequestDto = {
+        return this.ingestDocument({
             fileName,
             text,
-            chunkSize: 1000,
-            chunkOverlap: 200,
-        };
-
-        return this.ingestDocument(dto);
+        });
     }
 
     // --------------------------------------------------
-    // DIREKT HOCHGELADENE DATEI VERARBEITEN
+    // HOCHGELADENE TXT-DATEI VERARBEITEN
     // --------------------------------------------------
 
     async ingestUploadedFile(
         file: Express.Multer.File,
     ): Promise<number> {
         const text =
-            await this.textExtractorService
+            this.textExtractorService
                 .extractTextFromBuffer(
                     file.buffer,
                     file.originalname,
                 );
 
-        const dto: IngestDocumentRequestDto = {
-            fileName: file.originalname,
+        return this.ingestDocument({
+            fileName:
+            file.originalname,
             text,
-            chunkSize: 1000,
-            chunkOverlap: 200,
-        };
-
-        return this.ingestDocument(dto);
+        });
     }
 
     // --------------------------------------------------
-    // TEXT BEREINIGEN, CHUNKEN UND IN QDRANT SPEICHERN
+    // TEXT BEREINIGEN UND IN QDRANT SPEICHERN
     // --------------------------------------------------
 
     async ingestDocument(
         dto: IngestDocumentRequestDto,
     ): Promise<number> {
-        const chunkSize =
-            dto.chunkSize ?? 1000;
-
-        const chunkOverlap =
-            dto.chunkOverlap ?? 200;
-
         const cleanedText =
             this.cleanService.cleanText(
                 dto.text,
             );
 
         const chunks =
-            this.chunkingService.splitText(
+            this.chunkingService.getChunks(
                 cleanedText,
-                chunkSize,
-                chunkOverlap,
             );
 
         const documents: VectorDocumentDto[] =
@@ -113,7 +100,7 @@ export class DocumentIngestionService {
                     chunk,
 
                     category:
-                        'document-chunk',
+                        'uploaded-document',
 
                     source:
                     dto.fileName,

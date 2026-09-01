@@ -1,177 +1,74 @@
-import { Injectable } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+} from '@nestjs/common';
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import * as mammoth from 'mammoth';
-import { PDFParse } from 'pdf-parse';
+import { TxtExtractor } from './extractors/txt.extractor';
 
 @Injectable()
 export class TextExtractorService {
+    constructor(
+        private readonly txtExtractor:
+        TxtExtractor,
+    ) {}
 
     // --------------------------------------------------
-    // DATEI ÜBER DATEIPFAD VERARBEITEN
+    // TXT-DATEI ÜBER DATEIPFAD EINLESEN
     // --------------------------------------------------
 
     async extractText(
         filePath: string,
     ): Promise<string> {
-        const extension =
-            path.extname(filePath)
-                .toLowerCase();
+        this.validateTxtFile(
+            filePath,
+        );
 
-        switch (extension) {
-            case '.txt':
-                return this.extractTxt(
-                    filePath,
-                );
-
-            case '.pdf':
-                return this.extractPdf(
-                    filePath,
-                );
-
-            case '.docx':
-                return this.extractDocx(
-                    filePath,
-                );
-
-            default:
-                throw new Error(
-                    `Nicht unterstütztes Dateiformat: ${extension}`,
-                );
-        }
-    }
-
-    // --------------------------------------------------
-    // HOCHGELADENE DATEI DIREKT AUS BUFFER VERARBEITEN
-    // --------------------------------------------------
-
-    async extractTextFromBuffer(
-        buffer: Buffer,
-        fileName: string,
-    ): Promise<string> {
-        const extension =
-            path.extname(fileName)
-                .toLowerCase();
-
-        switch (extension) {
-            case '.txt':
-                return this.extractTxtFromBuffer(
-                    buffer,
-                );
-
-            case '.pdf':
-                return this.extractPdfFromBuffer(
-                    buffer,
-                );
-
-            case '.docx':
-                return this.extractDocxFromBuffer(
-                    buffer,
-                );
-
-            default:
-                throw new Error(
-                    `Nicht unterstütztes Dateiformat: ${extension}`,
-                );
-        }
-    }
-
-    // --------------------------------------------------
-    // TXT ÜBER DATEIPFAD
-    // --------------------------------------------------
-
-    private async extractTxt(
-        filePath: string,
-    ): Promise<string> {
-        const content =
-            await fs.readFile(
-                filePath,
-                'utf-8',
-            );
-
-        return content.trim();
-    }
-
-    // --------------------------------------------------
-    // PDF ÜBER DATEIPFAD
-    // --------------------------------------------------
-
-    private async extractPdf(
-        filePath: string,
-    ): Promise<string> {
         const buffer =
             await fs.readFile(
                 filePath,
             );
 
-        return this.extractPdfFromBuffer(
+        return this.txtExtractor.extract(
             buffer,
         );
     }
 
     // --------------------------------------------------
-    // DOCX ÜBER DATEIPFAD
+    // HOCHGELADENE TXT-DATEI AUS BUFFER EINLESEN
     // --------------------------------------------------
 
-    private async extractDocx(
-        filePath: string,
-    ): Promise<string> {
-        const result =
-            await mammoth.extractRawText({
-                path: filePath,
-            });
-
-        return result.value.trim();
-    }
-
-    // --------------------------------------------------
-    // TXT AUS BUFFER
-    // --------------------------------------------------
-
-    private extractTxtFromBuffer(
+    extractTextFromBuffer(
         buffer: Buffer,
+        fileName: string,
     ): string {
-        return buffer
-            .toString('utf-8')
-            .trim();
+        this.validateTxtFile(
+            fileName,
+        );
+
+        return this.txtExtractor.extract(
+            buffer,
+        );
     }
 
     // --------------------------------------------------
-    // PDF AUS BUFFER
+    // DATEIFORMAT PRÜFEN
     // --------------------------------------------------
 
-    private async extractPdfFromBuffer(
-        buffer: Buffer,
-    ): Promise<string> {
-        const parser =
-            new PDFParse({
-                data: buffer,
-            });
+    private validateTxtFile(
+        fileName: string,
+    ): void {
+        const extension =
+            path.extname(
+                fileName,
+            ).toLowerCase();
 
-        try {
-            const result =
-                await parser.getText();
-
-            return result.text.trim();
-
-        } finally {
-            await parser.destroy();
+        if (extension !== '.txt') {
+            throw new BadRequestException(
+                'Es werden ausschließlich TXT-Dateien unterstützt.',
+            );
         }
-    }
-
-    // --------------------------------------------------
-    // DOCX AUS BUFFER
-    // --------------------------------------------------
-
-    private async extractDocxFromBuffer(
-        buffer: Buffer,
-    ): Promise<string> {
-        const result =
-            await mammoth.extractRawText({
-                buffer,
-            });
-
-        return result.value.trim();
     }
 }

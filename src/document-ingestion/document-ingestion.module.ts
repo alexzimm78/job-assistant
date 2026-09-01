@@ -6,6 +6,7 @@ import { ChunkingService } from './chunking.service';
 import { CleanService } from './clean.service';
 import { DocumentIngestionController } from './document-ingestion.controller';
 import { DocumentIngestionService } from './document-ingestion.service';
+import { TxtExtractor } from './extractors/txt.extractor';
 import { TextExtractorService } from './text-extractor.service';
 
 @Module({
@@ -20,6 +21,7 @@ import { TextExtractorService } from './text-extractor.service';
         CleanService,
         DocumentIngestionService,
         TextExtractorService,
+        TxtExtractor,
     ],
     exports: [
         DocumentIngestionService,

@@ -1,10 +1,13 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     Post,
     UploadedFile,
     UseInterceptors,
 } from '@nestjs/common';
+
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import {
     ApiBadGatewayResponse,
@@ -18,11 +21,9 @@ import {
 
 import { Public } from '../auth/decorators/public.decorator';
 
-import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
 import { DocumentIngestionService } from './document-ingestion.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-
-
+import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
+import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
 
 @ApiTags('document-ingestion')
 @Controller('document-ingestion')
@@ -40,20 +41,20 @@ export class DocumentIngestionController {
     @Post()
     @ApiOperation({
         summary:
-            'Dokument aufteilen und in Qdrant speichern',
+            'Text als ein Dokument in Qdrant speichern',
     })
     @ApiCreatedResponse({
         description:
-            'Das Dokument wurde in Chunks aufgeteilt und gespeichert',
+            'Das Dokument wurde erfolgreich gespeichert',
         schema: {
             example: {
-                saved: 3,
+                saved: 1,
             },
         },
     })
     @ApiBadRequestResponse({
         description:
-            'Der Text oder die Chunk-Einstellungen sind ungültig',
+            'Der übergebene Text ist ungültig',
     })
     @ApiBadGatewayResponse({
         description:
@@ -67,7 +68,9 @@ export class DocumentIngestionController {
     }> {
         const saved =
             await this.documentIngestionService
-                .ingestDocument(dto);
+                .ingestDocument(
+                    dto,
+                );
 
         return {
             saved,
@@ -75,91 +78,71 @@ export class DocumentIngestionController {
     }
 
     // --------------------------------------------------
-    // TXT-DATEI TESTWEISE EINLESEN
+    // TXT-DATEI DIREKT HOCHLADEN
     // --------------------------------------------------
-
-    @Public()
-    @Post('file-test')
-    @ApiOperation({
-        summary:
-            'TXT-Datei einlesen und Text zurückgeben',
-    })
-    @ApiCreatedResponse({
-        description:
-            'Der Text wurde erfolgreich aus der Datei gelesen',
-    })
-    @ApiBadRequestResponse({
-        description:
-            'Dateipfad oder Dateiformat ist ungültig',
-    })
-    async ingestFileTest(
-        @Body('filePath')
-        filePath: string,
-    ): Promise<{
-        saved: number;
-    }> {
-        const saved =
-            await this.documentIngestionService
-                .ingestFile(filePath);
-
-        return {
-            saved,
-        };
-    }
-
-    // --------------------------------------------------
-// DATEI DIREKT HOCHLADEN
-// --------------------------------------------------
 
     @Public()
     @Post('upload')
     @UseInterceptors(
-        FileInterceptor('file'),
+        FileInterceptor(
+            'file',
+        ),
     )
-    @ApiConsumes('multipart/form-data')
+    @ApiConsumes(
+        'multipart/form-data',
+    )
     @ApiBody({
         schema: {
             type: 'object',
+            required: [
+                'file',
+            ],
             properties: {
                 file: {
                     type: 'string',
                     format: 'binary',
+                    description:
+                        'Es werden ausschließlich TXT-Dateien unterstützt',
                 },
             },
-            required: [
-                'file',
-            ],
         },
     })
     @ApiOperation({
         summary:
-            'TXT-, PDF- oder DOCX-Datei hochladen und in Qdrant speichern',
+            'TXT-Datei hochladen und in Qdrant speichern',
     })
     @ApiCreatedResponse({
         description:
-            'Die Datei wurde verarbeitet und gespeichert',
-        schema: {
-            example: {
-                saved: 2,
-            },
-        },
+            'Die TXT-Datei wurde als ein Chunk gespeichert',
+        type:
+        UploadDocumentResponseDto,
     })
     @ApiBadRequestResponse({
         description:
-            'Datei fehlt oder Dateiformat ist ungültig',
+            'Datei fehlt, ist leer oder besitzt kein TXT-Format',
+    })
+    @ApiBadGatewayResponse({
+        description:
+            'Fehler bei der Verbindung zum AI API oder zu Qdrant',
     })
     async uploadFile(
         @UploadedFile()
-        file: Express.Multer.File,
-    ): Promise<{
-        saved: number;
-    }> {
-        const saved =
+        file?: Express.Multer.File,
+    ): Promise<UploadDocumentResponseDto> {
+        if (!file) {
+            throw new BadRequestException(
+                'Bitte laden Sie eine TXT-Datei hoch.',
+            );
+        }
+
+        const chunksCreated =
             await this.documentIngestionService
-                .ingestUploadedFile(file);
+                .ingestUploadedFile(
+                    file,
+                );
 
         return {
-            saved,
+            chunksCreated,
         };
     }
 }
