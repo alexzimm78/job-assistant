@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { EmbeddingsService } from '../embeddings/embeddings.service';
 import { VectorDocumentDto } from '../vector-storage/dto/vector-document.dto';
 import { VectorStorageService } from '../vector-storage/vector-storage.service';
 
@@ -16,6 +17,9 @@ export class DocumentIngestionService {
 
         private readonly cleanService:
         CleanService,
+
+        private readonly embeddingsService:
+        EmbeddingsService,
 
         private readonly vectorStorageService:
         VectorStorageService,
@@ -71,22 +75,25 @@ export class DocumentIngestionService {
     }
 
     // --------------------------------------------------
-    // TEXT BEREINIGEN UND IN QDRANT SPEICHERN
+    // VOLLSTÄNDIGE INGESTION PIPELINE KOORDINIEREN
     // --------------------------------------------------
 
     async ingestDocument(
         dto: IngestDocumentRequestDto,
     ): Promise<number> {
+        // 1. Text bereinigen
         const cleanedText =
             this.cleanService.cleanText(
                 dto.text,
             );
 
+        // 2. Gesamten Text als einen Chunk behandeln
         const chunks =
             this.chunkingService.getChunks(
                 cleanedText,
             );
 
+        // 3. Dokument-Payload vorbereiten
         const documents: VectorDocumentDto[] =
             chunks.map(
                 (
@@ -107,9 +114,21 @@ export class DocumentIngestionService {
                 }),
             );
 
+        // 4. Embeddings über bestehenden Service erzeugen
+        const embeddings =
+            await this.embeddingsService
+                .createEmbeddings({
+                    texts:
+                    chunks,
+                });
+
+        // 5. Text, Payload und Embeddings in Qdrant speichern
         return this.vectorStorageService
-            .saveDocuments({
-                documents,
-            });
+            .saveDocumentsWithEmbeddings(
+                {
+                    documents,
+                },
+                embeddings,
+            );
     }
 }

@@ -7,35 +7,44 @@ import {
 } from '@nestjs/common';
 
 import { EmbeddingsService } from '../embeddings/embeddings.service';
+import { Embeddings } from '../embeddings/models/embedding.model';
 
 import { SaveVectorDocumentsRequestDto } from './dto/save-vector-documents-request.dto';
 import { SearchVectorDocumentsRequestDto } from './dto/search-vector-documents-request.dto';
 import { VectorDocumentDto } from './dto/vector-document.dto';
-import { QdrantClient } from './qdrant/qdrant.client';
 import { QdrantPoint } from './qdrant/models/qdrant-point.model';
 import { QdrantSearchResult } from './qdrant/models/qdrant-search-result.model';
+import { QdrantClient } from './qdrant/qdrant.client';
 
 @Injectable()
 export class VectorStorageService {
     private readonly logger =
-        new Logger(VectorStorageService.name);
+        new Logger(
+            VectorStorageService.name,
+        );
 
     constructor(
         private readonly embeddingsService:
         EmbeddingsService,
+
         private readonly qdrantClient:
         QdrantClient,
     ) {}
 
+    // --------------------------------------------------
+    // DOKUMENTE INKLUSIVE EMBEDDINGS SPEICHERN
+    // --------------------------------------------------
+
     async saveDocuments(
         dto: SaveVectorDocumentsRequestDto,
     ): Promise<number> {
-        const documents = dto.documents;
-
-        const texts = documents.map(
-            (document: VectorDocumentDto) =>
-                document.content,
-        );
+        const texts =
+            dto.documents.map(
+                (
+                    document:
+                    VectorDocumentDto,
+                ) => document.content,
+            );
 
         const embeddings =
             await this.embeddingsService
@@ -43,8 +52,26 @@ export class VectorStorageService {
                     texts,
                 });
 
+        return this.saveDocumentsWithEmbeddings(
+            dto,
+            embeddings,
+        );
+    }
+
+    // --------------------------------------------------
+    // BEREITS ERSTELLTE EMBEDDINGS SPEICHERN
+    // --------------------------------------------------
+
+    async saveDocumentsWithEmbeddings(
+        dto: SaveVectorDocumentsRequestDto,
+        embeddings: Embeddings,
+    ): Promise<number> {
+        const documents =
+            dto.documents;
+
         if (
-            embeddings.length !== documents.length
+            embeddings.length !==
+            documents.length
         ) {
             throw new InternalServerErrorException(
                 'Anzahl der Embeddings stimmt nicht mit der Anzahl der Dokumente überein',
@@ -54,15 +81,21 @@ export class VectorStorageService {
         const points: QdrantPoint[] =
             documents.map(
                 (
-                    document: VectorDocumentDto,
+                    document:
+                    VectorDocumentDto,
                     index: number,
                 ): QdrantPoint => {
                     const payload: Record<
                         string,
-                        string | number | boolean | null
+                        string |
+                        number |
+                        boolean |
+                        null
                     > = {
-                        title: document.title,
-                        content: document.content,
+                        title:
+                        document.title,
+                        content:
+                        document.content,
                     };
 
                     if (document.category) {
@@ -76,14 +109,18 @@ export class VectorStorageService {
                     }
 
                     return {
-                        id: randomUUID(),
-                        vector: embeddings[index],
+                        id:
+                            randomUUID(),
+                        vector:
+                            embeddings[index],
                         payload,
                     };
                 },
             );
 
-        await this.qdrantClient.save(points);
+        await this.qdrantClient.save(
+            points,
+        );
 
         this.logger.log(
             `Dokumente gespeichert: ${points.length}`,
@@ -92,16 +129,23 @@ export class VectorStorageService {
         return points.length;
     }
 
+    // --------------------------------------------------
+    // SEMANTISCHE SUCHE
+    // --------------------------------------------------
+
     async searchDocuments(
         dto: SearchVectorDocumentsRequestDto,
     ): Promise<QdrantSearchResult[]> {
         const embeddings =
             await this.embeddingsService
                 .createEmbeddings({
-                    texts: [dto.query],
+                    texts: [
+                        dto.query,
+                    ],
                 });
 
-        const queryVector = embeddings[0];
+        const queryVector =
+            embeddings[0];
 
         if (!queryVector) {
             throw new InternalServerErrorException(

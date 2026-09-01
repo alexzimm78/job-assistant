@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { EmbeddingsModule } from '../embeddings/embeddings.module';
 import { VectorStorageModule } from '../vector-storage/vector-storage.module';
 
 import { ChunkingService } from './chunking.service';
@@ -11,6 +12,7 @@ import { TextExtractorService } from './text-extractor.service';
 
 @Module({
     imports: [
+        EmbeddingsModule,
         VectorStorageModule,
     ],
     controllers: [
