@@ -176,3 +176,42 @@ Testergebnis:
 Der Upload wurde mit dem HTTP-Status `201 Created` abgeschlossen.
 Die erzeugten Points und ihre Metadaten wurden anschließend in der
 Qdrant Web UI kontrolliert.
+
+### Automatisierte Validierung der Chunking-Strategie
+
+Die gewählte Chunking-Strategie wurde mit unterschiedlichen
+Dokumentarten, Textgrößen und Parametern getestet.
+
+| Testfall | Erwartetes Verhalten |
+| --- | --- |
+| Kurzer Lebenslauf | Wird als ein Chunk verarbeitet |
+| Lange Stellenanzeige | Wird in mehrere Chunks aufgeteilt |
+| Strukturiertes Anschreiben | Inhalt und Struktur bleiben erhalten |
+| Fixed Size mit Overlap | Benachbarte Chunks teilen gemeinsamen Kontext |
+| Leerer Text | Wird mit `BadRequestException` abgelehnt |
+| `chunkSize <= 0` | Wird mit `BadRequestException` abgelehnt |
+| `overlap < 0` | Wird mit `BadRequestException` abgelehnt |
+| `overlap >= chunkSize` | Wird mit `BadRequestException` abgelehnt |
+
+Die automatisierten Tests befinden sich in:
+
+```text
+src/ingestion/chunking.service.spec.ts
+```
+
+Ausführung:
+
+```bash
+npm test -- chunking.service.spec.ts
+```
+
+Testergebnis:
+
+```text
+Test Suites: 1 passed
+Tests:       8 passed
+```
+
+Damit wurde nachgewiesen, dass die Strategie sowohl kurze als auch
+lange und strukturierte Bewerbungsdokumente verarbeitet und ungültige
+Parameter kontrolliert ablehnt.
