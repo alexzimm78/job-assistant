@@ -21,16 +21,16 @@ import {
 
 import { Public } from '../auth/decorators/public.decorator';
 
-import { DocumentIngestionService } from './document-ingestion.service';
+import { IngestionService } from './ingestion.service';
 import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
 import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
 
-@ApiTags('document-ingestion')
-@Controller('document-ingestion')
-export class DocumentIngestionController {
+@ApiTags('ingestion')
+@Controller('ingestion')
+export class IngestionController {
     constructor(
-        private readonly documentIngestionService:
-        DocumentIngestionService,
+        private readonly ingestionService:
+        IngestionService,
     ) {}
 
     // --------------------------------------------------
@@ -67,7 +67,7 @@ export class DocumentIngestionController {
         saved: number;
     }> {
         const saved =
-            await this.documentIngestionService
+            await this.ingestionService
                 .ingestDocument(
                     dto,
                 );
@@ -136,7 +136,7 @@ export class DocumentIngestionController {
         }
 
         const chunksCreated =
-            await this.documentIngestionService
+            await this.ingestionService
                 .ingestUploadedFile(
                     file,
                 );

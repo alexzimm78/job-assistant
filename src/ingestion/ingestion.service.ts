@@ -10,7 +10,7 @@ import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
 import { TextExtractorService } from './text-extractor.service';
 
 @Injectable()
-export class DocumentIngestionService {
+export class IngestionService {
     constructor(
         private readonly chunkingService:
         ChunkingService,

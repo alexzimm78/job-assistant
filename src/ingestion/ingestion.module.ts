@@ -5,8 +5,8 @@ import { VectorStorageModule } from '../vector-storage/vector-storage.module';
 
 import { ChunkingService } from './chunking.service';
 import { CleanService } from './clean.service';
-import { DocumentIngestionController } from './document-ingestion.controller';
-import { DocumentIngestionService } from './document-ingestion.service';
+import { IngestionController } from './ingestion.controller';
+import { IngestionService } from './ingestion.service';
 import { TxtExtractor } from './extractors/txt.extractor';
 import { TextExtractorService } from './text-extractor.service';
 
@@ -16,17 +16,17 @@ import { TextExtractorService } from './text-extractor.service';
         VectorStorageModule,
     ],
     controllers: [
-        DocumentIngestionController,
+        IngestionController,
     ],
     providers: [
         ChunkingService,
         CleanService,
-        DocumentIngestionService,
+        IngestionService,
         TextExtractorService,
         TxtExtractor,
     ],
     exports: [
-        DocumentIngestionService,
+        IngestionService,
     ],
 })
-export class DocumentIngestionModule {}
+export class IngestionModule {}
