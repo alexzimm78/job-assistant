@@ -1,32 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import {Injectable} from '@nestjs/common';
 
-import { EmbeddingsService } from '../embeddings/embeddings.service';
-import { VectorDocumentDto } from '../vector-storage/dto/vector-document.dto';
-import { VectorStorageService } from '../vector-storage/vector-storage.service';
+import {EmbeddingsService} from '../embeddings/embeddings.service';
+import {VectorDocumentDto} from '../vector-storage/dto/vector-document.dto';
+import {VectorStorageService} from '../vector-storage/vector-storage.service';
 
-import { ChunkingService } from './chunking.service';
-import { CleanService } from './clean.service';
-import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
-import { TextExtractorService } from './text-extractor.service';
+import {ChunkingService} from './chunking.service';
+import {CleanService} from './clean.service';
+import {IngestDocumentRequestDto} from './dto/ingest-document-request.dto';
+import {TextExtractorService} from './text-extractor.service';
 
 @Injectable()
 export class IngestionService {
     constructor(
         private readonly chunkingService:
         ChunkingService,
-
         private readonly cleanService:
         CleanService,
-
         private readonly embeddingsService:
         EmbeddingsService,
-
         private readonly vectorStorageService:
         VectorStorageService,
-
         private readonly textExtractorService:
         TextExtractorService,
-    ) {}
+    ) {
+    }
 
     // --------------------------------------------------
     // TXT-DATEI ÜBER DATEIPFAD EINLESEN
@@ -87,13 +84,15 @@ export class IngestionService {
                 dto.text,
             );
 
-        // 2. Gesamten Text als einen Chunk behandeln
+        // 2. Text mit festgelegter Größe und Overlap aufteilen
         const chunks =
             this.chunkingService.getChunks(
                 cleanedText,
+                1000,
+                200,
             );
 
-        // 3. Dokument-Payload vorbereiten
+        // 3. Dokument und Chunk-Metadaten vorbereiten
         const documents: VectorDocumentDto[] =
             chunks.map(
                 (
@@ -111,6 +110,15 @@ export class IngestionService {
 
                     source:
                     dto.fileName,
+
+                    chunkIndex:
+                    index,
+
+                    documentName:
+                    dto.fileName,
+
+                    chunkText:
+                    chunk,
                 }),
             );
 

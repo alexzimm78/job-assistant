@@ -108,6 +108,24 @@ export class VectorStorageService {
                             document.source;
                     }
 
+                    if (
+                        document.chunkIndex !==
+                        undefined
+                    ) {
+                        payload.chunkIndex =
+                            document.chunkIndex;
+                    }
+
+                    if (document.documentName) {
+                        payload.documentName =
+                            document.documentName;
+                    }
+
+                    if (document.chunkText) {
+                        payload.chunkText =
+                            document.chunkText;
+                    }
+
                     return {
                         id:
                             randomUUID(),

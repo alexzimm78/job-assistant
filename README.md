@@ -96,3 +96,83 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Document Ingestion und Chunking
+
+### Geplante Dokumente
+
+In diesem Projekt werden Lebensläufe, Stellenanzeigen, Anschreiben
+und weitere Dokumente aus dem Bewerbungsprozess verarbeitet.
+
+Diese Dokumente können mehrere längere Abschnitte enthalten.
+Informationen wie Berufserfahrung, Ausbildung, Kenntnisse und
+Anforderungen können sich über verschiedene Textbereiche verteilen.
+
+### Gewählte Chunking-Strategie
+
+Als Hauptstrategie wird eine feste Chunk-Größe mit Overlap verwendet:
+
+```text
+chunkSize = 1000 Zeichen
+overlap = 200 Zeichen
+```
+
+Der Overlap beträgt 20 Prozent der Chunk-Größe.
+
+Diese Strategie wurde gewählt, weil wichtige Aussagen an der Grenze
+zwischen zwei Chunks stehen können. Durch den Overlap bleibt ein Teil
+des vorherigen Textes im folgenden Chunk erhalten. Dadurch geht beim
+späteren semantischen Suchen weniger Kontext verloren.
+
+### Ingestion Pipeline
+
+```text
+TXT-Datei
+    ↓
+Text extrahieren
+    ↓
+Text bereinigen
+    ↓
+ChunkingService
+    ↓
+Chunks
+    ↓
+EmbeddingsService
+    ↓
+VectorStorageService
+    ↓
+Qdrant
+```
+
+Jeder Chunk erhält ein eigenes Embedding und wird als separater Point
+in Qdrant gespeichert.
+
+Im Payload jedes Points werden folgende Metadaten gespeichert:
+
+```text
+chunkIndex
+documentName
+chunkText
+```
+
+`chunkIndex` speichert die ursprüngliche Reihenfolge der Chunks.
+`documentName` verbindet den Chunk mit der Quelldatei.
+`chunkText` enthält den Text, für den das Embedding erzeugt wurde.
+
+### Test
+
+Für den Test wurde die Datei
+`chunking-test-bewerbungsassistent.txt` über Postman hochgeladen.
+
+Testergebnis:
+
+```text
+1 TXT-Datei
+8 Chunks
+8 Embeddings
+8 Qdrant-Points
+```
+
+Der Upload wurde mit dem HTTP-Status `201 Created` abgeschlossen.
+Die erzeugten Points und ihre Metadaten wurden anschließend in der
+Qdrant Web UI kontrolliert.

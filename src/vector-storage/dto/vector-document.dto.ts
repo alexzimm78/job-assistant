@@ -1,9 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import {
+    IsInt,
     IsNotEmpty,
     IsOptional,
     IsString,
+    Min,
 } from 'class-validator';
 
 export class VectorDocumentDto {
@@ -42,4 +44,36 @@ export class VectorDocumentDto {
     @IsOptional()
     @IsString()
     source?: string;
+
+    @ApiProperty({
+        description:
+            'Position des Chunks im ursprünglichen Dokument',
+        example: 0,
+        required: false,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    chunkIndex?: number;
+
+    @ApiProperty({
+        description:
+            'Name des ursprünglichen Dokuments',
+        example: 'bewerbung.txt',
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    documentName?: string;
+
+    @ApiProperty({
+        description:
+            'Textinhalt des einzelnen Chunks',
+        example:
+            'Dies ist der erste Abschnitt des Dokuments.',
+        required: false,
+    })
+    @IsOptional()
+    @IsString()
+    chunkText?: string;
 }
