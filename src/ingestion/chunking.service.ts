@@ -18,15 +18,21 @@ export class ChunkingService {
             );
         }
 
-        if (chunkSize <= 0) {
+        if (
+            !Number.isInteger(chunkSize) ||
+            chunkSize <= 0
+        ) {
             throw new BadRequestException(
-                'Die Chunk-Größe muss größer als 0 sein.',
+                'Die Chunk-Größe muss eine positive ganze Zahl sein.',
             );
         }
 
-        if (overlap < 0) {
+        if (
+            !Number.isInteger(overlap) ||
+            overlap < 0
+        ) {
             throw new BadRequestException(
-                'Der Overlap darf nicht negativ sein.',
+                'Der Overlap muss eine nicht negative ganze Zahl sein.',
             );
         }
 

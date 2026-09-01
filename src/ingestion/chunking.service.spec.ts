@@ -189,5 +189,37 @@ describe(
                 );
             },
         );
+
+        it(
+            'soll eine nicht numerische Chunk-Größe ablehnen',
+            () => {
+                expect(
+                    () =>
+                        service.getChunks(
+                            'Testtext',
+                            Number('abc'),
+                            200,
+                        ),
+                ).toThrow(
+                    BadRequestException,
+                );
+            },
+        );
+
+        it(
+            'soll Dezimalzahlen als Parameter ablehnen',
+            () => {
+                expect(
+                    () =>
+                        service.getChunks(
+                            'Testtext',
+                            1000.5,
+                            200.5,
+                        ),
+                ).toThrow(
+                    BadRequestException,
+                );
+            },
+        );
     },
 );

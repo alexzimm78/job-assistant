@@ -1,5 +1,7 @@
 import {Injectable} from '@nestjs/common';
 
+import {ConfigService} from '@nestjs/config';
+
 import {EmbeddingsService} from '../embeddings/embeddings.service';
 import {VectorDocumentDto} from '../vector-storage/dto/vector-document.dto';
 import {VectorStorageService} from '../vector-storage/vector-storage.service';
@@ -16,6 +18,8 @@ export class IngestionService {
         ChunkingService,
         private readonly cleanService:
         CleanService,
+        private readonly configService:
+        ConfigService,
         private readonly embeddingsService:
         EmbeddingsService,
         private readonly vectorStorageService:
@@ -84,12 +88,27 @@ export class IngestionService {
                 dto.text,
             );
 
-        // 2. Text mit festgelegter Größe und Overlap aufteilen
+        // 2. Konfigurierbare Chunking-Parameter auslesen
+        const chunkSize =
+            Number(
+                this.configService.get<string>(
+                    'DOCUMENT_CHUNK_SIZE',
+                ) ?? '1000',
+            );
+
+        const overlap =
+            Number(
+                this.configService.get<string>(
+                    'DOCUMENT_CHUNK_OVERLAP',
+                ) ?? '200',
+            );
+
+        // 2.1 Text mit fester Größe und Overlap aufteilen
         const chunks =
             this.chunkingService.getChunks(
                 cleanedText,
-                1000,
-                200,
+                chunkSize,
+                overlap,
             );
 
         // 3. Dokument und Chunk-Metadaten vorbereiten

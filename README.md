@@ -192,6 +192,8 @@ Dokumentarten, Textgrößen und Parametern getestet.
 | `chunkSize <= 0` | Wird mit `BadRequestException` abgelehnt |
 | `overlap < 0` | Wird mit `BadRequestException` abgelehnt |
 | `overlap >= chunkSize` | Wird mit `BadRequestException` abgelehnt |
+| Nicht numerischer Parameter | Wird mit `BadRequestException` abgelehnt |
+| Dezimalzahl als Parameter | Wird mit `BadRequestException` abgelehnt |
 
 Die automatisierten Tests befinden sich in:
 
@@ -209,9 +211,116 @@ Testergebnis:
 
 ```text
 Test Suites: 1 passed
-Tests:       8 passed
+Tests:       10 passed
 ```
 
 Damit wurde nachgewiesen, dass die Strategie sowohl kurze als auch
 lange und strukturierte Bewerbungsdokumente verarbeitet und ungültige
 Parameter kontrolliert ablehnt.
+
+
+### Detaillierte Begründung der Designentscheidung
+
+Die Pipeline verarbeitet hauptsächlich Dokumente aus dem
+Bewerbungsbereich:
+
+| Dokumenttyp | Typische Eigenschaften | Nutzen der Strategie |
+| --- | --- | --- |
+| Lebenslauf | Überschriften, Listen und unterschiedlich lange Abschnitte | Längere Bereiche werden in vergleichbar große Chunks zerlegt |
+| Stellenanzeige | Lange Aufgaben- und Anforderungsbeschreibungen | Einzelne Anforderungen bleiben gezielt auffindbar |
+| Anschreiben | Zusammenhängender Fließtext | Der Overlap erhält den Zusammenhang zwischen benachbarten Textteilen |
+| Kunden- und Projektdokumente | Unterschiedliche Länge und Struktur | Fixed Size liefert ein vorhersehbares Verhalten |
+
+Als Strategie wird **Fixed Size mit Overlap** verwendet. Die
+Standardgröße beträgt `1000` Zeichen. Davon werden `200` Zeichen in
+den folgenden Chunk übernommen.
+
+Der Overlap entspricht 20 Prozent der Chunk-Größe:
+
+```text
+200 / 1000 = 0,20 = 20 %
+```
+
+Ohne Overlap könnte eine wichtige Aussage genau an einer Chunk-Grenze
+getrennt werden. Der wiederholte Textbereich sorgt dafür, dass beide
+benachbarten Chunks einen Teil des gemeinsamen Kontextes enthalten.
+
+Die Schrittweite beträgt:
+
+```text
+step = chunkSize - overlap
+step = 1000 - 200
+step = 800 Zeichen
+```
+
+Kurze Dokumente unterhalb der Chunk-Größe bleiben als ein einzelner
+Chunk erhalten. Längere Dokumente werden in mehrere überlappende
+Chunks aufgeteilt.
+
+### Verarbeitung von Embeddings und Qdrant-Metadaten
+
+Der `IngestionService` koordiniert die vollständige Verarbeitung:
+
+1. `TextExtractorService` extrahiert den Text aus der TXT-Datei.
+2. `CleanService` bereinigt den extrahierten Text.
+3. `ChunkingService` erzeugt ein geordnetes `string[]` mit Chunks.
+4. `EmbeddingsService` erhält das vollständige Chunk-Array.
+5. Für jeden Chunk wird genau ein separates Embedding erzeugt.
+6. Die Anzahl der Embeddings wird mit der Anzahl der Chunks geprüft.
+7. `VectorStorageService` erstellt für jeden Chunk einen Qdrant-Point.
+8. Jeder Point erhält eine eigene UUID, einen Vektor und ein Payload.
+
+Beispiel:
+
+```text
+8 Chunks
+    ↓
+8 Embeddings
+    ↓
+8 Qdrant-Points
+```
+
+Wenn die Anzahl der Embeddings nicht mit der Anzahl der Dokumente
+übereinstimmt, wird eine `InternalServerErrorException` ausgelöst.
+Dadurch kann kein Chunk mit einem falschen Embedding verbunden werden.
+
+Das Payload jedes Qdrant-Points enthält:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `title` | Dateiname und lesbare Nummer des Chunks |
+| `content` | Inhalt, für den das Embedding erzeugt wurde |
+| `category` | Kategorie des gespeicherten Dokuments |
+| `source` | Name der ursprünglichen Quelldatei |
+| `chunkIndex` | Position des Chunks, beginnend bei `0` |
+| `documentName` | Verbindung zum ursprünglichen Dokument |
+| `chunkText` | Originaltext des einzelnen Chunks |
+
+Qdrant kann Points in einer anderen Reihenfolge anzeigen. Die
+ursprüngliche Dokumentreihenfolge bleibt über `chunkIndex` erhalten.
+
+### Konfiguration der Chunking-Parameter
+
+Chunk-Größe und Overlap sind über Umgebungsvariablen konfigurierbar:
+
+```env
+DOCUMENT_CHUNK_SIZE=1000
+DOCUMENT_CHUNK_OVERLAP=200
+```
+
+Wenn die Variablen nicht vorhanden sind, verwendet die Anwendung
+automatisch die Standardwerte `1000` und `200`.
+
+Dadurch können die Parameter später an andere Dokumenttypen angepasst
+werden, ohne den TypeScript-Code zu verändern.
+
+Die Parameter werden validiert:
+
+```text
+chunkSize muss eine positive ganze Zahl sein
+overlap muss eine nicht negative ganze Zahl sein
+overlap muss kleiner als chunkSize sein
+```
+
+Ungültige Werte führen kontrolliert zu einer
+`BadRequestException`.
