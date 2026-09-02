@@ -221,5 +221,24 @@ describe(
                 );
             },
         );
+
+
+
+        it(
+            'soll einen Overlap über 20 Prozent ablehnen',
+            () => {
+                expect(
+                    () =>
+                        service.getChunks(
+                            'Testtext',
+                            1000,
+                            201,
+                        ),
+                ).toThrow(
+                    BadRequestException,
+                );
+            },
+        );
     },
 );
+
