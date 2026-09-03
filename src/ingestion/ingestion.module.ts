@@ -8,25 +8,22 @@ import { CleanService } from './clean.service';
 import { IngestionController } from './ingestion.controller';
 import { IngestionService } from './ingestion.service';
 import { TxtExtractor } from './extractors/txt.extractor';
-import { TextExtractorService } from './text-extractor.service';
+import { PdfExtractor } from './extractors/pdf.extractor';
+import { DocxExtractor } from './extractors/docx.extractor';
+import { MultiformatExtractor } from './extractors/multiformat.extractor';
 
 @Module({
-    imports: [
-        EmbeddingsModule,
-        VectorStorageModule,
-    ],
-    controllers: [
-        IngestionController,
-    ],
-    providers: [
-        ChunkingService,
-        CleanService,
-        IngestionService,
-        TextExtractorService,
-        TxtExtractor,
-    ],
-    exports: [
-        IngestionService,
-    ],
+  imports: [EmbeddingsModule, VectorStorageModule],
+  controllers: [IngestionController],
+  providers: [
+    ChunkingService,
+    CleanService,
+    IngestionService,
+    TxtExtractor,
+    PdfExtractor,
+    DocxExtractor,
+    MultiformatExtractor,
+  ],
+  exports: [IngestionService],
 })
 export class IngestionModule {}

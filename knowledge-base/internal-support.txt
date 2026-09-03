@@ -1,0 +1,14 @@
+Seite 1
+----------------------------------------
+AlexZ Job Assistant
+
+INTERNE SUPPORT-ANWEISUNG
+
+Supportanfragen werden zuerst nach Dringlichkeit eingeordnet. Technische Fehler beim Dokument-Upload erhalten die Priorität hoch. Allgemeine Bedienungsfragen erhalten die Priorität normal.
+
+Mitarbeiter prüfen den Dateinamen, das Dateiformat und die angezeigte Fehlermeldung. Passwörter, API-Schlüssel und vollständige persönliche Dokumente dürfen nicht in interne Notizen kopiert werden.
+
+Wenn ein Fehler nicht innerhalb von 30 Minuten gelöst werden kann, wird das Ticket mit allen technischen Informationen an die Entwicklung weitergegeben. Der Benutzer erhält eine kurze Statusmeldung.
+
+AlexZ Job Assistant
+© AlexZ Automation - nur für interne Verwendung

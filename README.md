@@ -5,12 +5,15 @@ speichert Textabschnitte als Vektoren in Qdrant.
 
 ## Document Ingestion Pipeline
 
-Die Pipeline verarbeitet hochgeladene `.txt`-Dokumente:
+Die Pipeline verarbeitet hochgeladene `.txt`-, `.pdf`- und `.docx`-Dokumente über einen gemeinsamen Endpoint:
 
 ```text
-TXT-Datei
+TXT / PDF / DOCX
     ↓
-TextExtractorService
+MultiformatExtractor
+    ├── TxtExtractor
+    ├── PdfExtractor
+    └── DocxExtractor
     ↓
 CleanService
     ↓
@@ -25,7 +28,10 @@ Qdrant
 
 Der `IngestionService` koordiniert den Ablauf. Die Verantwortlichkeiten bleiben getrennt:
 
-- `TextExtractorService`: Text aus der TXT-Datei extrahieren
+- `MultiformatExtractor`: Dateiendung erkennen und passenden Extractor auswählen
+- `TxtExtractor`: Text mit Standardmitteln von Node.js extrahieren
+- `PdfExtractor`: Text mit `pdf-parse` extrahieren
+- `DocxExtractor`: Text mit `mammoth` extrahieren
 - `CleanService`: Text bereinigen
 - `ChunkingService`: Text in Chunks aufteilen
 - `EmbeddingsService`: für jeden Chunk ein Embedding erzeugen
@@ -33,6 +39,23 @@ Der `IngestionService` koordiniert den Ablauf. Die Verantwortlichkeiten bleiben 
 
 Der `ChunkingService` greift nicht auf AI-APIs, Qdrant oder eine Datenbank zu. Seine einzige Aufgabe ist die Umwandlung
 von Text in ein geordnetes `string[]`.
+
+Nicht unterstützte Formate wie `.png` oder `.xlsx` werden vor der weiteren Verarbeitung durch die
+`UnsupportedFileFormatException` mit HTTP-Status `400 Bad Request` abgelehnt.
+
+## Wissensbasis
+
+Die ersten realen Testdokumente liegen im Ordner `knowledge-base`:
+
+| Datei | Zugriff | Format |
+|---|---|---|
+| `public-product.txt` | öffentlich | TXT |
+| `public-faq.pdf` | öffentlich | PDF |
+| `internal-guidelines.docx` | intern | DOCX |
+| `internal-support.txt` | intern | TXT |
+
+Alle Dateien enthalten absichtlich Seitenangaben, Trennlinien, wiederholte Firmennamen und Copyright-Zeilen. Der
+`CleanService` entfernt diesen technischen Ballast, ohne den fachlichen Inhalt zu löschen.
 
 ## Geplante Dokumenttypen
 
@@ -146,7 +169,7 @@ Qdrant kann Points in einer anderen Reihenfolge anzeigen. Die ursprüngliche Dok
 
 ## Manueller Test mit Postman und Qdrant
 
-Für den Test wurde `chunking-test-bewerbungsassistent.txt` über folgenden Endpoint hochgeladen:
+Alle Dokumentformate werden über denselben Endpoint hochgeladen:
 
 ```text
 POST /ingestion/upload
@@ -155,22 +178,29 @@ Key: file
 Type: File
 ```
 
-Ergebnis:
+Beispielantwort:
 
 ```text
 HTTP 201 Created
-1 TXT-Datei
-8 Chunks
-8 Embeddings
-8 Qdrant-Points
+{
+  "chunksCreated": 1
+}
 ```
 
-In der Qdrant Web UI wurden `chunkIndex`, `documentName`, `chunkText` und Vektoren mit einer Länge von `3072`
-kontrolliert.
+Die Anzahl der erzeugten Chunks entspricht der Anzahl neuer Qdrant-Points. In der Qdrant Web UI müssen insbesondere
+`chunkIndex`, `documentName` und `chunkText` kontrolliert werden. `chunkText` darf keine Seitenangaben, Trennlinien oder
+Copyright-Zeilen mehr enthalten.
+
+Negativtest: Eine Datei `image.png` über dasselbe Feld hochladen. Erwartet wird `400 Bad Request`; die Datei darf keine
+Embeddings und keine Qdrant-Points erzeugen.
 
 ## Automatisierte Tests
 
-Die Tests befinden sich in `src/ingestion/chunking.service.spec.ts`.
+Die Tests befinden sich in:
+
+- `src/ingestion/chunking.service.spec.ts`
+- `src/ingestion/clean.service.spec.ts`
+- `src/ingestion/extractors/multiformat.extractor.spec.ts`
 
 | Testfall                    | Erwartetes Verhalten                                   |
 |-----------------------------|--------------------------------------------------------|
@@ -190,6 +220,8 @@ Tests ausführen:
 
 ```bash
 npm test -- chunking.service.spec.ts
+npm test -- clean.service.spec.ts
+npm test -- multiformat.extractor.spec.ts
 ```
 
 Aktuelles Ergebnis:

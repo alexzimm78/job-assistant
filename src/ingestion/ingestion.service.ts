@@ -1,161 +1,117 @@
-import {Injectable} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import {ConfigService} from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 
-import {EmbeddingsService} from '../embeddings/embeddings.service';
-import {VectorDocumentDto} from '../vector-storage/dto/vector-document.dto';
-import {VectorStorageService} from '../vector-storage/vector-storage.service';
+import { EmbeddingsService } from '../embeddings/embeddings.service';
+import { VectorDocumentDto } from '../vector-storage/dto/vector-document.dto';
+import { VectorStorageService } from '../vector-storage/vector-storage.service';
 
-import {ChunkingService} from './chunking.service';
-import {CleanService} from './clean.service';
-import {IngestDocumentRequestDto} from './dto/ingest-document-request.dto';
-import {TextExtractorService} from './text-extractor.service';
+import { ChunkingService } from './chunking.service';
+import { CleanService } from './clean.service';
+import { IngestDocumentRequestDto } from './dto/ingest-document-request.dto';
+import { MultiformatExtractor } from './extractors/multiformat.extractor';
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 @Injectable()
 export class IngestionService {
-    constructor(
-        private readonly chunkingService:
-        ChunkingService,
-        private readonly cleanService:
-        CleanService,
-        private readonly configService:
-        ConfigService,
-        private readonly embeddingsService:
-        EmbeddingsService,
-        private readonly vectorStorageService:
-        VectorStorageService,
-        private readonly textExtractorService:
-        TextExtractorService,
-    ) {
-    }
+  constructor(
+    private readonly chunkingService: ChunkingService,
+    private readonly cleanService: CleanService,
+    private readonly configService: ConfigService,
+    private readonly embeddingsService: EmbeddingsService,
+    private readonly vectorStorageService: VectorStorageService,
+    private readonly multiformatExtractor: MultiformatExtractor,
+  ) {}
 
-    // --------------------------------------------------
-    // TXT-DATEI ÜBER DATEIPFAD EINLESEN
-    // --------------------------------------------------
+  // --------------------------------------------------
+  // DATEI ÜBER DATEIPFAD EINLESEN
+  // --------------------------------------------------
 
-    async ingestFile(
-        filePath: string,
-    ): Promise<number> {
-        const text =
-            await this.textExtractorService
-                .extractText(
-                    filePath,
-                );
+  async ingestFile(filePath: string): Promise<number> {
+    const buffer = await fs.readFile(filePath);
 
-        const fileName =
-            filePath
-                .split(/[\\/]/)
-                .pop()
-            ?? 'unknown-file.txt';
+    const fileName = path.basename(filePath);
 
-        return this.ingestDocument({
-            fileName,
-            text,
-        });
-    }
+    const text = await this.multiformatExtractor.extract(buffer, fileName);
 
-    // --------------------------------------------------
-    // HOCHGELADENE TXT-DATEI VERARBEITEN
-    // --------------------------------------------------
+    return this.ingestDocument({
+      fileName,
+      text,
+    });
+  }
 
-    async ingestUploadedFile(
-        file: Express.Multer.File,
-    ): Promise<number> {
-        const text =
-            this.textExtractorService
-                .extractTextFromBuffer(
-                    file.buffer,
-                    file.originalname,
-                );
+  // --------------------------------------------------
+  // HOCHGELADENE DATEI VERARBEITEN
+  // --------------------------------------------------
 
-        return this.ingestDocument({
-            fileName:
-            file.originalname,
-            text,
-        });
-    }
+  async ingestUploadedFile(file: Express.Multer.File): Promise<number> {
+    const text = await this.multiformatExtractor.extract(
+      file.buffer,
+      file.originalname,
+    );
 
-    // --------------------------------------------------
-    // VOLLSTÄNDIGE INGESTION PIPELINE KOORDINIEREN
-    // --------------------------------------------------
+    return this.ingestDocument({
+      fileName: file.originalname,
+      text,
+    });
+  }
 
-    async ingestDocument(
-        dto: IngestDocumentRequestDto,
-    ): Promise<number> {
-        // 1. Text bereinigen
-        const cleanedText =
-            this.cleanService.cleanText(
-                dto.text,
-            );
+  // --------------------------------------------------
+  // VOLLSTÄNDIGE INGESTION PIPELINE KOORDINIEREN
+  // --------------------------------------------------
 
-        // 2. Konfigurierbare Chunking-Parameter auslesen
-        const chunkSize =
-            Number(
-                this.configService.get<string>(
-                    'DOCUMENT_CHUNK_SIZE',
-                ) ?? '1000',
-            );
+  async ingestDocument(dto: IngestDocumentRequestDto): Promise<number> {
+    // 1. Text bereinigen
+    const cleanedText = this.cleanService.cleanText(dto.text);
 
-        const overlap =
-            Number(
-                this.configService.get<string>(
-                    'DOCUMENT_CHUNK_OVERLAP',
-                ) ?? '200',
-            );
+    // 2. Konfigurierbare Chunking-Parameter auslesen
+    const chunkSize = Number(
+      this.configService.get<string>('DOCUMENT_CHUNK_SIZE') ?? '1000',
+    );
 
-        // 2.1 Text mit fester Größe und Overlap aufteilen
-        const chunks =
-            this.chunkingService.getChunks(
-                cleanedText,
-                chunkSize,
-                overlap,
-            );
+    const overlap = Number(
+      this.configService.get<string>('DOCUMENT_CHUNK_OVERLAP') ?? '200',
+    );
 
-        // 3. Dokument und Chunk-Metadaten vorbereiten
-        const documents: VectorDocumentDto[] =
-            chunks.map(
-                (
-                    chunk: string,
-                    index: number,
-                ): VectorDocumentDto => ({
-                    title:
-                        `${dto.fileName} – Teil ${index + 1}`,
+    // 2.1 Text mit fester Größe und Overlap aufteilen
+    const chunks = this.chunkingService.getChunks(
+      cleanedText,
+      chunkSize,
+      overlap,
+    );
 
-                    content:
-                    chunk,
+    // 3. Dokument und Chunk-Metadaten vorbereiten
+    const documents: VectorDocumentDto[] = chunks.map(
+      (chunk: string, index: number): VectorDocumentDto => ({
+        title: `${dto.fileName} – Teil ${index + 1}`,
 
-                    category:
-                        'uploaded-document',
+        content: chunk,
 
-                    source:
-                    dto.fileName,
+        category: 'uploaded-document',
 
-                    chunkIndex:
-                    index,
+        source: dto.fileName,
 
-                    documentName:
-                    dto.fileName,
+        chunkIndex: index,
 
-                    chunkText:
-                    chunk,
-                }),
-            );
+        documentName: dto.fileName,
 
-        // 4. Embeddings über bestehenden Service erzeugen
-        const embeddings =
-            await this.embeddingsService
-                .createEmbeddings({
-                    texts:
-                    chunks,
-                });
+        chunkText: chunk,
+      }),
+    );
 
-        // 5. Text, Payload und Embeddings in Qdrant speichern
-        return this.vectorStorageService
-            .saveDocumentsWithEmbeddings(
-                {
-                    documents,
-                },
-                embeddings,
-            );
-    }
+    // 4. Embeddings über bestehenden Service erzeugen
+    const embeddings = await this.embeddingsService.createEmbeddings({
+      texts: chunks,
+    });
+
+    // 5. Text, Payload und Embeddings in Qdrant speichern
+    return this.vectorStorageService.saveDocumentsWithEmbeddings(
+      {
+        documents,
+      },
+      embeddings,
+    );
+  }
 }

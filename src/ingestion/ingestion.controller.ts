@@ -1,22 +1,22 @@
 import {
-    BadRequestException,
-    Body,
-    Controller,
-    Post,
-    UploadedFile,
-    UseInterceptors,
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import {
-    ApiBadGatewayResponse,
-    ApiBadRequestResponse,
-    ApiBody,
-    ApiConsumes,
-    ApiCreatedResponse,
-    ApiOperation,
-    ApiTags,
+  ApiBadGatewayResponse,
+  ApiBadRequestResponse,
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiTags,
 } from '@nestjs/swagger';
 
 import { Public } from '../auth/decorators/public.decorator';
@@ -28,121 +28,93 @@ import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
 @ApiTags('ingestion')
 @Controller('ingestion')
 export class IngestionController {
-    constructor(
-        private readonly ingestionService:
-        IngestionService,
-    ) {}
+  constructor(private readonly ingestionService: IngestionService) {}
 
-    // --------------------------------------------------
-    // TEXT DIREKT IN QDRANT SPEICHERN
-    // --------------------------------------------------
+  // --------------------------------------------------
+  // TEXT DIREKT IN QDRANT SPEICHERN
+  // --------------------------------------------------
 
-    @Public()
-    @Post()
-    @ApiOperation({
-        summary:
-            'Text als ein Dokument in Qdrant speichern',
-    })
-    @ApiCreatedResponse({
-        description:
-            'Das Dokument wurde erfolgreich gespeichert',
-        schema: {
-            example: {
-                saved: 1,
-            },
+  @Public()
+  @Post()
+  @ApiOperation({
+    summary: 'Text als ein Dokument in Qdrant speichern',
+  })
+  @ApiCreatedResponse({
+    description: 'Das Dokument wurde erfolgreich gespeichert',
+    schema: {
+      example: {
+        saved: 1,
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Der übergebene Text ist ungültig',
+  })
+  @ApiBadGatewayResponse({
+    description: 'Fehler bei der Verbindung zum AI API oder zu Qdrant',
+  })
+  async ingestDocument(
+    @Body()
+    dto: IngestDocumentRequestDto,
+  ): Promise<{
+    saved: number;
+  }> {
+    const saved = await this.ingestionService.ingestDocument(dto);
+
+    return {
+      saved,
+    };
+  }
+
+  // --------------------------------------------------
+  // TXT-, PDF- ODER DOCX-DATEI HOCHLADEN
+  // --------------------------------------------------
+
+  @Public()
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Unterstützte Formate: TXT, PDF und DOCX',
         },
-    })
-    @ApiBadRequestResponse({
-        description:
-            'Der übergebene Text ist ungültig',
-    })
-    @ApiBadGatewayResponse({
-        description:
-            'Fehler bei der Verbindung zum AI API oder zu Qdrant',
-    })
-    async ingestDocument(
-        @Body()
-        dto: IngestDocumentRequestDto,
-    ): Promise<{
-        saved: number;
-    }> {
-        const saved =
-            await this.ingestionService
-                .ingestDocument(
-                    dto,
-                );
-
-        return {
-            saved,
-        };
+      },
+    },
+  })
+  @ApiOperation({
+    summary: 'TXT-, PDF- oder DOCX-Datei hochladen und in Qdrant speichern',
+  })
+  @ApiCreatedResponse({
+    description: 'Die Datei wurde verarbeitet und als Chunks gespeichert',
+    type: UploadDocumentResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Datei fehlt, ist leer oder besitzt ein nicht unterstütztes Format',
+  })
+  @ApiBadGatewayResponse({
+    description: 'Fehler bei der Verbindung zum AI API oder zu Qdrant',
+  })
+  async uploadFile(
+    @UploadedFile()
+    file?: Express.Multer.File,
+  ): Promise<UploadDocumentResponseDto> {
+    if (!file) {
+      throw new BadRequestException(
+        'Bitte laden Sie eine TXT-, PDF- oder DOCX-Datei hoch.',
+      );
     }
 
-    // --------------------------------------------------
-    // TXT-DATEI DIREKT HOCHLADEN
-    // --------------------------------------------------
+    const chunksCreated = await this.ingestionService.ingestUploadedFile(file);
 
-    @Public()
-    @Post('upload')
-    @UseInterceptors(
-        FileInterceptor(
-            'file',
-        ),
-    )
-    @ApiConsumes(
-        'multipart/form-data',
-    )
-    @ApiBody({
-        schema: {
-            type: 'object',
-            required: [
-                'file',
-            ],
-            properties: {
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                    description:
-                        'Es werden ausschließlich TXT-Dateien unterstützt',
-                },
-            },
-        },
-    })
-    @ApiOperation({
-        summary:
-            'TXT-Datei hochladen und in Qdrant speichern',
-    })
-    @ApiCreatedResponse({
-        description:
-            'Die TXT-Datei wurde als ein Chunk gespeichert',
-        type:
-        UploadDocumentResponseDto,
-    })
-    @ApiBadRequestResponse({
-        description:
-            'Datei fehlt, ist leer oder besitzt kein TXT-Format',
-    })
-    @ApiBadGatewayResponse({
-        description:
-            'Fehler bei der Verbindung zum AI API oder zu Qdrant',
-    })
-    async uploadFile(
-        @UploadedFile()
-        file?: Express.Multer.File,
-    ): Promise<UploadDocumentResponseDto> {
-        if (!file) {
-            throw new BadRequestException(
-                'Bitte laden Sie eine TXT-Datei hoch.',
-            );
-        }
-
-        const chunksCreated =
-            await this.ingestionService
-                .ingestUploadedFile(
-                    file,
-                );
-
-        return {
-            chunksCreated,
-        };
-    }
+    return {
+      chunksCreated,
+    };
+  }
 }

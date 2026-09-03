@@ -1,0 +1,12 @@
+Seite 1
+────────────────────────────────────────
+AlexZ Job Assistant
+
+ÖFFENTLICHE PRODUKTBESCHREIBUNG
+
+Der AlexZ Job Assistant unterstützt Bewerber bei der Organisation ihrer Bewerbungen. Benutzer können Lebensläufe, Stellenanzeigen und Anschreiben verwalten. Das System bereitet Dokumente für eine spätere intelligente Suche und für passende Bewerbungsvorschläge vor.
+
+Zu den Kernfunktionen gehören die strukturierte Verwaltung von Bewerberprofilen, Stellenangeboten und Bewerbungsstatus. Dokumente werden in kleine Textabschnitte aufgeteilt und sicher in der Wissensbasis gespeichert.
+
+AlexZ Job Assistant
+© AlexZ Automation 2026
