@@ -183,4 +183,25 @@ export class VectorStorageService {
 
         return results;
     }
+
+    // --------------------------------------------------
+    // ÄHNLICHE CHUNKS MIT VORHANDENEM EMBEDDING SUCHEN
+    // --------------------------------------------------
+
+    async searchSimilar(
+        embedding: number[],
+        topK: number = 5,
+    ): Promise<QdrantSearchResult[]> {
+        const results =
+            await this.qdrantClient.search(
+                embedding,
+                topK,
+            );
+
+        this.logger.log(
+            `Top-${topK} ähnliche Chunks gefunden: ${results.length}`,
+        );
+
+        return results;
+    }
 }
