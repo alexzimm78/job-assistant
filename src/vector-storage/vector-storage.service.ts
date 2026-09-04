@@ -96,6 +96,8 @@ export class VectorStorageService {
                         document.title,
                         content:
                         document.content,
+                        text:
+                        document.content,
                     };
 
                     if (document.category) {
@@ -119,6 +121,14 @@ export class VectorStorageService {
                     if (document.documentName) {
                         payload.documentName =
                             document.documentName;
+                    }
+
+                    if (
+                        document.pageNumber !==
+                        undefined
+                    ) {
+                        payload.pageNumber =
+                            document.pageNumber;
                     }
 
                     if (document.chunkText) {

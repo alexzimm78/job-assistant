@@ -1,4 +1,5 @@
 import { UnsupportedFileFormatException } from '../exceptions/unsupported-file-format.exception';
+import { ExtractedDocument } from '../interfaces/extracted-document.interface';
 
 import { DocxExtractor } from './docx.extractor';
 import { MultiformatExtractor } from './multiformat.extractor';
@@ -13,7 +14,20 @@ describe('MultiformatExtractor', () => {
   } as unknown as TxtExtractor;
 
   const pdfExtractor = {
-    extract: jest.fn().mockResolvedValue('PDF'),
+    extract: jest.fn().mockImplementation(
+        async (
+            _content: Buffer,
+            documentName: string,
+        ): Promise<ExtractedDocument[]> => [
+          {
+            content: 'PDF',
+            source: {
+              documentName,
+              pageNumber: 2,
+            },
+          },
+        ],
+    ),
   } as unknown as PdfExtractor;
 
   const docxExtractor = {
@@ -24,29 +38,59 @@ describe('MultiformatExtractor', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
     extractor = new MultiformatExtractor(
-      txtExtractor,
-      pdfExtractor,
-      docxExtractor,
+        txtExtractor,
+        pdfExtractor,
+        docxExtractor,
     );
   });
 
-  it.each([
-    ['wissen.txt', 'TXT'],
-    ['wissen.PDF', 'PDF'],
-    ['wissen.docx', 'DOCX'],
-  ])(
-    'soll für %s den passenden Extractor auswählen',
-    async (fileName: string, expected: string) => {
-      await expect(extractor.extract(content, fileName)).resolves.toBe(
-        expected,
-      );
-    },
-  );
+  it('soll für TXT Text und Dokumentname zurückgeben', async () => {
+    await expect(
+        extractor.extract(content, 'wissen.txt'),
+    ).resolves.toEqual([
+      {
+        content: 'TXT',
+        source: {
+          documentName: 'wissen.txt',
+        },
+      },
+    ]);
+  });
+
+  it('soll für PDF Text, Dokumentname und Seite zurückgeben', async () => {
+    await expect(
+        extractor.extract(content, 'wissen.PDF'),
+    ).resolves.toEqual([
+      {
+        content: 'PDF',
+        source: {
+          documentName: 'wissen.PDF',
+          pageNumber: 2,
+        },
+      },
+    ]);
+  });
+
+  it('soll für DOCX Text und Dokumentname zurückgeben', async () => {
+    await expect(
+        extractor.extract(content, 'wissen.docx'),
+    ).resolves.toEqual([
+      {
+        content: 'DOCX',
+        source: {
+          documentName: 'wissen.docx',
+        },
+      },
+    ]);
+  });
 
   it('soll ein nicht unterstütztes Format ablehnen', async () => {
-    await expect(extractor.extract(content, 'bild.png')).rejects.toBeInstanceOf(
-      UnsupportedFileFormatException,
+    await expect(
+        extractor.extract(content, 'bild.png'),
+    ).rejects.toBeInstanceOf(
+        UnsupportedFileFormatException,
     );
   });
 });

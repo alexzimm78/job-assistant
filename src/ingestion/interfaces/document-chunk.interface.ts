@@ -1,6 +1,6 @@
+import { SourceMetadata } from './source-metadata.interface';
+
 export interface DocumentChunk {
-  documentId: string;
-  fileName: string;
-  chunkIndex: number;
-  text: string;
+  content: string;
+  source: SourceMetadata;
 }

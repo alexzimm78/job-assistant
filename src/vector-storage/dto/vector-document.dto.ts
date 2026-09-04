@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import {ApiProperty} from '@nestjs/swagger';
 
 import {
     IsInt,
@@ -76,4 +76,15 @@ export class VectorDocumentDto {
     @IsOptional()
     @IsString()
     chunkText?: string;
+
+    @ApiProperty({
+        description:
+            'Seitenzahl im ursprünglichen PDF-Dokument',
+        example: 2,
+        required: false,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    pageNumber?: number;
 }
