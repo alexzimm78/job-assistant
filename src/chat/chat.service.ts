@@ -5,6 +5,9 @@ import {
 } from '@nestjs/common';
 
 import {
+    AiService,
+} from '../ai/ai.service';
+import {
     EmbeddingsService,
 } from '../embeddings/embeddings.service';
 import {
@@ -17,9 +20,6 @@ import {
 import {
     ChatResponseDto,
 } from './dto/chat-response.dto';
-import {
-    ChatSearchResultDto,
-} from './dto/chat-search-result.dto';
 
 @Injectable()
 export class ChatService {
@@ -29,6 +29,8 @@ export class ChatService {
     private readonly topK: number = 5;
 
     constructor(
+        private readonly aiService:
+        AiService,
         private readonly embeddingsService:
         EmbeddingsService,
         private readonly vectorStorageService:
@@ -63,25 +65,48 @@ export class ChatService {
                     this.topK,
                 );
 
-        const chunks: ChatSearchResultDto[] =
-            results.map(
-                (
-                    result,
-                ): ChatSearchResultDto => {
-                    const chunk =
-                        result.payload
-                            .chunkText ??
-                        result.payload
-                            .content ??
-                        '';
+        const chunks: string[] =
+            results
+                .map(
+                    result => {
+                        const chunk =
+                            result.payload
+                                .chunkText ??
+                            result.payload
+                                .content ??
+                            '';
 
-                    return {
-                        chunk: String(chunk),
-                        score:
-                        result.score,
-                    };
-                },
-            );
+                        return typeof chunk ===
+                        'string'
+                            ? chunk
+                            : '';
+                    },
+                )
+                .filter(
+                    chunk =>
+                        chunk.trim()
+                            .length > 0,
+                );
+
+        const context =
+            chunks.length > 0
+                ? chunks.join(
+                    '\n\n',
+                )
+                : 'Keine relevanten Informationen gefunden.';
+
+        const prompt = [
+            'Du bist ein hilfreicher Assistent.',
+            'Beantworte die Frage ausschließlich auf Grundlage des bereitgestellten Kontexts.',
+            'Erfinde keine Informationen. Wenn der Kontext keine Antwort enthält, sage, dass die Information in der Wissensdatenbank nicht vorhanden ist.',
+            'Gib nur die Antwort aus und erwähne den Kontext nicht.',
+            '',
+            'Kontext:',
+            context,
+            '',
+            'Frage:',
+            request.message,
+        ].join('\n');
 
         this.logger.log(
             `Frage: ${request.message}`,
@@ -89,17 +114,24 @@ export class ChatService {
 
         chunks.forEach(
             (
-                result,
+                chunk,
                 index,
             ) => {
                 this.logger.log(
-                    `Ergebnis ${index + 1}: ${result.chunk}`,
+                    `Ergebnis ${index + 1}: ${chunk}`,
                 );
             },
         );
 
+        const aiResponse =
+            await this.aiService
+                .ask({
+                    message: prompt,
+                });
+
         return {
-            chunks,
+            answer:
+            aiResponse.answer,
         };
     }
 }

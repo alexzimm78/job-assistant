@@ -1,5 +1,10 @@
-import { Module } from '@nestjs/common';
+import {
+    Module,
+} from '@nestjs/common';
 
+import {
+    AiModule,
+} from '../ai/ai.module';
 import {
     EmbeddingsModule,
 } from '../embeddings/embeddings.module';
@@ -16,6 +21,7 @@ import {
 
 @Module({
     imports: [
+        AiModule,
         EmbeddingsModule,
         VectorStorageModule,
     ],
@@ -26,4 +32,5 @@ import {
         ChatService,
     ],
 })
-export class ChatModule {}
+export class ChatModule {
+}

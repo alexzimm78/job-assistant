@@ -34,18 +34,19 @@ export class ChatController {
     constructor(
         private readonly chatService:
         ChatService,
-    ) {}
+    ) {
+    }
 
     @Public()
     @Post()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary:
-            'Top-5 relevante Chunks semantisch suchen',
+            'Frage mit dem RAG-Pipeline beantworten',
     })
     @ApiOkResponse({
         description:
-            'Die relevantesten Chunks wurden gefunden',
+            'Die KI-Antwort wurde auf Grundlage der Wissensdatenbank erstellt',
         type: ChatResponseDto,
     })
     @ApiBadRequestResponse({
