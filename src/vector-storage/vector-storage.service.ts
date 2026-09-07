@@ -15,6 +15,9 @@ import { VectorDocumentDto } from './dto/vector-document.dto';
 import { QdrantPoint } from './qdrant/models/qdrant-point.model';
 import { QdrantSearchResult } from './qdrant/models/qdrant-search-result.model';
 import { QdrantClient } from './qdrant/qdrant.client';
+import {SearchFilter,} from './qdrant/models/search-filter.model';
+
+
 
 @Injectable()
 export class VectorStorageService {
@@ -122,7 +125,6 @@ export class VectorStorageService {
                         payload.documentName =
                             document.documentName;
                     }
-
                     if (
                         document.pageNumber !==
                         undefined
@@ -134,6 +136,16 @@ export class VectorStorageService {
                     if (document.chunkText) {
                         payload.chunkText =
                             document.chunkText;
+                    }
+
+                    if (document.documentType) {
+                        payload.documentType =
+                            document.documentType;
+                    }
+
+                    if (document.language) {
+                        payload.language =
+                            document.language;
                     }
 
                     return {
@@ -201,11 +213,13 @@ export class VectorStorageService {
     async searchSimilar(
         embedding: number[],
         topK: number = 5,
+        filter?: SearchFilter,
     ): Promise<QdrantSearchResult[]> {
         const results =
             await this.qdrantClient.search(
                 embedding,
                 topK,
+                filter,
             );
 
         this.logger.log(

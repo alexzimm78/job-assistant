@@ -10,6 +10,7 @@ import {
 
 import { QdrantPoint } from './models/qdrant-point.model';
 import { QdrantSearchResult } from './models/qdrant-search-result.model';
+import {SearchFilter,} from './models/search-filter.model';
 
 @Injectable()
 export class QdrantClient implements OnModuleInit {
@@ -106,28 +107,42 @@ export class QdrantClient implements OnModuleInit {
     async search(
         vector: number[],
         limit: number,
+        filter?: SearchFilter,
     ): Promise<QdrantSearchResult[]> {
         const response =
             await this.client.query(
                 this.collectionName,
                 {
-                    query: vector,
+                    query:
+                    vector,
                     limit,
-                    with_payload: true,
-                    with_vector: false,
+                    with_payload:
+                        true,
+                    with_vector:
+                        false,
+                    ...(filter
+                        ? {
+                            filter,
+                        }
+                        : {}),
                 },
             );
 
-        const results = response.points;
+        const results =
+            response.points;
 
         this.logger.log(
             `Semantische Suchergebnisse: ${results.length}`,
         );
 
         return results.map(
-            (result): QdrantSearchResult => ({
-                id: result.id,
-                score: result.score,
+            (
+                result,
+            ): QdrantSearchResult => ({
+                id:
+                result.id,
+                score:
+                result.score,
                 payload:
                     result.payload ?? {},
             }),

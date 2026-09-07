@@ -249,3 +249,54 @@ npm run build
 Die Pipeline erzeugt aus einem langen Dokument mehrere geordnete Chunks. Jeder Chunk erhält ein eigenes Embedding, einen
 eigenen Qdrant-Point und die erforderlichen Metadaten. Der Overlap erhält Kontext an Textgrenzen und ist gleichzeitig
 auf 20 Prozent begrenzt, um unnötige Redundanz zu vermeiden.
+
+## Metadata Filtering
+
+Für die Einschränkung der semantischen Suche verwendet der Job Assistant
+die Metadaten `documentType` und `language`.
+
+### documentType
+
+`documentType` beschreibt die Art eines Dokuments.
+
+Unterstützte Werte:
+
+- `RESUME`
+- `JOB_OFFER`
+- `COVER_LETTER`
+- `COMPANY_INFO`
+
+Dieses Feld ermöglicht es, die Suche beispielsweise nur auf Lebensläufe
+oder Stellenanzeigen zu begrenzen.
+
+### language
+
+`language` beschreibt die Sprache eines Dokuments.
+
+Unterstützte Werte:
+
+- `DE`
+- `EN`
+- `RU`
+
+Dieses Feld ermöglicht es, nur Dokumente in der gewünschten Sprache
+zu durchsuchen.
+
+Die Metadaten werden beim Upload über `multipart/form-data` übertragen,
+an alle Chunks des Dokuments weitergegeben und im Qdrant-Payload gespeichert.
+
+Der `SearchFilterBuilder` erstellt aus den optionalen Suchparametern einen
+typisierten Qdrant-Filter. Mehrere conditionen werden innerhalb von `must`
+mit AND kombiniert.
+
+Der Filter wird direkt mit der Suchanfrage an Qdrant übergeben. Dadurch wird
+die Ergebnismenge vor der Similarity Search eingeschränkt.
+
+Beispiel:
+
+```json
+{
+    "message": "Welche Kenntnisse werden benötigt?",
+    "documentType": "JOB_OFFER",
+    "language": "DE"
+}

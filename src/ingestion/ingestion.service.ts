@@ -1,36 +1,76 @@
-import {Injectable} from '@nestjs/common';
+import {
+    Injectable,
+} from '@nestjs/common';
 
-import {ConfigService} from '@nestjs/config';
+import {
+    ConfigService,
+} from '@nestjs/config';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import {EmbeddingsService} from '../embeddings/embeddings.service';
-import {VectorDocumentDto} from '../vector-storage/dto/vector-document.dto';
-import {VectorStorageService} from '../vector-storage/vector-storage.service';
+import {
+    EmbeddingsService,
+} from '../embeddings/embeddings.service';
+import {
+    VectorDocumentDto,
+} from '../vector-storage/dto/vector-document.dto';
+import {
+    VectorStorageService,
+} from '../vector-storage/vector-storage.service';
 
-import {ChunkingService} from './chunking.service';
-import {CleanService} from './clean.service';
-import {IngestDocumentRequestDto} from './dto/ingest-document-request.dto';
-import {MultiformatExtractor} from './extractors/multiformat.extractor';
-import {DocumentChunk} from './interfaces/document-chunk.interface';
-import {ExtractedDocument} from './interfaces/extracted-document.interface';
+import {
+    ChunkingService,
+} from './chunking.service';
+import {
+    CleanService,
+} from './clean.service';
+import {
+    IngestDocumentMetadataDto,
+} from './dto/ingest-document-metadata.dto';
+import {
+    IngestDocumentRequestDto,
+} from './dto/ingest-document-request.dto';
+import {
+    MultiformatExtractor,
+} from './extractors/multiformat.extractor';
+import {
+    DocumentChunk,
+} from './interfaces/document-chunk.interface';
+import {
+    DocumentMetadata,
+} from './interfaces/document-metadata.interface';
+import {
+    ExtractedDocument,
+} from './interfaces/extracted-document.interface';
 
 @Injectable()
 export class IngestionService {
     constructor(
-        private readonly chunkingService: ChunkingService,
-        private readonly cleanService: CleanService,
-        private readonly configService: ConfigService,
-        private readonly embeddingsService: EmbeddingsService,
-        private readonly vectorStorageService: VectorStorageService,
-        private readonly multiformatExtractor: MultiformatExtractor,
+        private readonly chunkingService:
+        ChunkingService,
+        private readonly cleanService:
+        CleanService,
+        private readonly configService:
+        ConfigService,
+        private readonly embeddingsService:
+        EmbeddingsService,
+        private readonly vectorStorageService:
+        VectorStorageService,
+        private readonly multiformatExtractor:
+        MultiformatExtractor,
     ) {
     }
 
-    async ingestFile(filePath: string): Promise<number> {
-        const buffer = await fs.readFile(filePath);
-        const fileName = path.basename(filePath);
+    async ingestFile(
+        filePath: string,
+        metadata: DocumentMetadata,
+    ): Promise<number> {
+        const buffer =
+            await fs.readFile(filePath);
+
+        const fileName =
+            path.basename(filePath);
 
         const extractedDocuments =
             await this.multiformatExtractor.extract(
@@ -40,11 +80,13 @@ export class IngestionService {
 
         return this.ingestExtractedDocuments(
             extractedDocuments,
+            metadata,
         );
     }
 
     async ingestUploadedFile(
         file: Express.Multer.File,
+        metadata: IngestDocumentMetadataDto,
     ): Promise<number> {
         const extractedDocuments =
             await this.multiformatExtractor.extract(
@@ -54,75 +96,103 @@ export class IngestionService {
 
         return this.ingestExtractedDocuments(
             extractedDocuments,
+            metadata,
         );
     }
 
     async ingestDocument(
         dto: IngestDocumentRequestDto,
     ): Promise<number> {
-        const extractedDocuments: ExtractedDocument[] = [
+        const extractedDocuments:
+            ExtractedDocument[] = [
             {
                 content: dto.text,
                 source: {
-                    documentName: dto.fileName,
+                    documentName:
+                    dto.fileName,
                 },
             },
         ];
 
+        const metadata: DocumentMetadata = {
+            documentType:
+            dto.documentType,
+            language:
+            dto.language,
+        };
+
         return this.ingestExtractedDocuments(
             extractedDocuments,
+            metadata,
         );
     }
 
     private async ingestExtractedDocuments(
-        extractedDocuments: ExtractedDocument[],
+        extractedDocuments:
+        ExtractedDocument[],
+        metadata:
+        DocumentMetadata,
     ): Promise<number> {
-        const chunkSize = Number(
-            this.configService.get<string>(
-                'DOCUMENT_CHUNK_SIZE',
-            ) ?? '1000',
-        );
+        const chunkSize =
+            Number(
+                this.configService.get<string>(
+                    'DOCUMENT_CHUNK_SIZE',
+                ) ?? '1000',
+            );
 
-        const overlap = Number(
-            this.configService.get<string>(
-                'DOCUMENT_CHUNK_OVERLAP',
-            ) ?? '200',
-        );
+        const overlap =
+            Number(
+                this.configService.get<string>(
+                    'DOCUMENT_CHUNK_OVERLAP',
+                ) ?? '200',
+            );
 
         const chunks: DocumentChunk[] =
             extractedDocuments.flatMap(
-                (document): DocumentChunk[] => {
-                    const cleanedDocument: ExtractedDocument = {
-                        content: this.cleanService.cleanText(
-                            document.content,
-                        ),
-                        source: document.source,
+                (
+                    document,
+                ): DocumentChunk[] => {
+                    const cleanedDocument:
+                        ExtractedDocument = {
+                        content:
+                            this.cleanService.cleanText(
+                                document.content,
+                            ),
+                        source:
+                        document.source,
                     };
 
-                    return this.chunkingService.getDocumentChunks(
-                        cleanedDocument,
-                        chunkSize,
-                        overlap,
-                    );
+                    return this.chunkingService
+                        .getDocumentChunks(
+                            cleanedDocument,
+                            metadata,
+                            chunkSize,
+                            overlap,
+                        );
                 },
             );
 
-        const documents: VectorDocumentDto[] =
+        const documents:
+            VectorDocumentDto[] =
             chunks.map(
                 (
-                    chunk: DocumentChunk,
-                    index: number,
+                    chunk,
+                    index,
                 ): VectorDocumentDto => ({
                     title:
                         `${chunk.source.documentName} – Teil ${index + 1}`,
 
-                    content: chunk.content,
+                    content:
+                    chunk.content,
 
-                    category: 'uploaded-document',
+                    category:
+                        'uploaded-document',
 
-                    source: chunk.source.documentName,
+                    source:
+                    chunk.source.documentName,
 
-                    chunkIndex: index,
+                    chunkIndex:
+                    index,
 
                     documentName:
                     chunk.source.documentName,
@@ -130,16 +200,28 @@ export class IngestionService {
                     pageNumber:
                     chunk.source.pageNumber,
 
-                    chunkText: chunk.content,
+                    chunkText:
+                    chunk.content,
+
+                    documentType:
+                    chunk.metadata.documentType,
+
+                    language:
+                    chunk.metadata.language,
                 }),
             );
 
         const embeddings =
-            await this.embeddingsService.createEmbeddings({
-                texts: chunks.map(
-                    (chunk: DocumentChunk) => chunk.content,
-                ),
-            });
+            await this.embeddingsService
+                .createEmbeddings({
+                    texts:
+                        chunks.map(
+                            (
+                                chunk,
+                            ) =>
+                                chunk.content,
+                        ),
+                });
 
         return this.vectorStorageService
             .saveDocumentsWithEmbeddings(

@@ -20,6 +20,9 @@ import {
 import {
     ChatResponseDto,
 } from './dto/chat-response.dto';
+import {
+    SearchFilterBuilder,
+} from '../vector-storage/qdrant/search-filter.builder';
 
 @Injectable()
 export class ChatService {
@@ -58,11 +61,18 @@ export class ChatService {
             );
         }
 
+        const filter =
+            SearchFilterBuilder.build(
+                request.documentType,
+                request.language,
+            );
+
         const results =
             await this.vectorStorageService
                 .searchSimilar(
                     questionEmbedding,
                     this.topK,
+                    filter,
                 );
 
         const chunks: string[] =

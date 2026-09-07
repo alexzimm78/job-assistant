@@ -1,12 +1,15 @@
 import {ApiProperty} from '@nestjs/swagger';
 
 import {
+    IsEnum,
     IsInt,
     IsNotEmpty,
     IsOptional,
     IsString,
     Min,
 } from 'class-validator';
+import {DocumentLanguage,} from '../../ingestion/enums/document-language.enum';
+import {DocumentType,} from '../../ingestion/enums/document-type.enum';
 
 export class VectorDocumentDto {
     @ApiProperty({
@@ -87,4 +90,24 @@ export class VectorDocumentDto {
     @IsInt()
     @Min(1)
     pageNumber?: number;
+
+    @ApiProperty({
+        description: 'Art des Dokuments',
+        enum: DocumentType,
+        example: DocumentType.JOB_OFFER,
+        required: false,
+    })
+    @IsOptional()
+    @IsEnum(DocumentType)
+    documentType?: DocumentType;
+
+    @ApiProperty({
+        description: 'Sprache des Dokuments',
+        enum: DocumentLanguage,
+        example: DocumentLanguage.DE,
+        required: false,
+    })
+    @IsOptional()
+    @IsEnum(DocumentLanguage)
+    language?: DocumentLanguage;
 }

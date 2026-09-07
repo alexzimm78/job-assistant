@@ -1,6 +1,7 @@
 import {BadRequestException, Injectable} from '@nestjs/common';
 
 import {DocumentChunk} from './interfaces/document-chunk.interface';
+import {DocumentMetadata,} from './interfaces/document-metadata.interface';
 import {ExtractedDocument} from './interfaces/extracted-document.interface';
 
 @Injectable()
@@ -83,6 +84,7 @@ export class ChunkingService {
 
     getDocumentChunks(
         document: ExtractedDocument,
+        metadata: DocumentMetadata,
         chunkSize = 1000,
         overlap = 200,
     ): DocumentChunk[] {
@@ -97,6 +99,9 @@ export class ChunkingService {
                 content,
                 source: {
                     ...document.source,
+                },
+                metadata: {
+                    ...metadata,
                 },
             }),
         );

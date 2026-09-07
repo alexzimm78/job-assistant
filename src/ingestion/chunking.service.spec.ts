@@ -1,4 +1,10 @@
 import {BadRequestException} from '@nestjs/common';
+import {
+    DocumentLanguage,
+} from './enums/document-language.enum';
+import {
+    DocumentType,
+} from './enums/document-type.enum';
 
 import {ChunkingService} from './chunking.service';
 
@@ -102,34 +108,65 @@ describe('ChunkingService', () => {
         );
     });
 
-    it('soll die PDF-Quelle an alle Chunks weitergeben', () => {
-        const document = {
-            content: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            source: {
-                documentName: 'lebenslauf.pdf',
-                pageNumber: 3,
-            },
-        };
+    it('soll die PDF-Quelle und Metadaten an alle Chunks weitergeben',
+        () => {
+            const document = {
+                content:
+                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+                source: {
+                    documentName:
+                        'lebenslauf.pdf',
+                    pageNumber:
+                        3,
+                },
+            };
 
-        const chunks = service.getDocumentChunks(
-            document,
-            10,
-            2,
-        );
+            const metadata = {
+                documentType:
+                DocumentType.RESUME,
+                language:
+                DocumentLanguage.DE,
+            };
 
-        expect(chunks).toHaveLength(3);
+            const chunks =
+                service.getDocumentChunks(
+                    document,
+                    metadata,
+                    10,
+                    2,
+                );
 
-        for (const chunk of chunks) {
-            expect(chunk.source).toEqual({
-                documentName: 'lebenslauf.pdf',
-                pageNumber: 3,
-            });
-        }
+            expect(chunks)
+                .toHaveLength(3);
 
-        expect(chunks.map((chunk) => chunk.content)).toEqual([
-            'ABCDEFGHIJ',
-            'IJKLMNOPQR',
-            'QRSTUVWXYZ',
-        ]);
-    });
+            for (const chunk of chunks) {
+                expect(chunk.source)
+                    .toEqual({
+                        documentName:
+                            'lebenslauf.pdf',
+                        pageNumber:
+                            3,
+                    });
+
+                expect(chunk.metadata)
+                    .toEqual({
+                        documentType:
+                        DocumentType.RESUME,
+                        language:
+                        DocumentLanguage.DE,
+                    });
+            }
+
+            expect(
+                chunks.map(
+                    chunk =>
+                        chunk.content,
+                ),
+            ).toEqual([
+                'ABCDEFGHIJ',
+                'IJKLMNOPQR',
+                'QRSTUVWXYZ',
+            ]);
+        },
+    );
 });
