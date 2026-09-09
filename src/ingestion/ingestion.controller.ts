@@ -105,6 +105,7 @@ export class IngestionController {
                 'file',
                 'documentType',
                 'language',
+                'accessLevel',
             ],
             properties: {
                 file: {
@@ -137,6 +138,17 @@ export class IngestionController {
                         'DE',
                     description:
                         'Sprache des hochgeladenen Dokuments',
+                },
+                accessLevel: {
+                    type: 'string',
+                    enum: [
+                        'PUBLIC',
+                        'INTERNAL',
+                    ],
+                    example:
+                        'PUBLIC',
+                    description:
+                        'Zugriffsebene des Dokuments',
                 },
             },
         },

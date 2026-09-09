@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import {DocumentLanguage,} from '../../ingestion/enums/document-language.enum';
 import {DocumentType,} from '../../ingestion/enums/document-type.enum';
+import {DocumentAccessLevel,} from '../../ingestion/enums/document-access-level.enum';
 
 export class VectorDocumentDto {
     @ApiProperty({
@@ -110,4 +111,18 @@ export class VectorDocumentDto {
     @IsOptional()
     @IsEnum(DocumentLanguage)
     language?: DocumentLanguage;
+
+    @ApiProperty({
+        description:
+            'Zugriffsebene des Dokuments',
+        enum:
+        DocumentAccessLevel,
+        example:
+        DocumentAccessLevel.PUBLIC,
+        required:
+            false,
+    })
+    @IsOptional()
+    @IsEnum(DocumentAccessLevel)
+    accessLevel?: DocumentAccessLevel;
 }

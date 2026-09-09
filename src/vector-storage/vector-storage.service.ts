@@ -148,6 +148,11 @@ export class VectorStorageService {
                             document.language;
                     }
 
+                    if (document.accessLevel) {
+                        payload.accessLevel =
+                            document.accessLevel;
+                    }
+
                     return {
                         id:
                             randomUUID(),

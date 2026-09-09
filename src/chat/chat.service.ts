@@ -19,10 +19,19 @@ import {
 } from './dto/chat-request.dto';
 import {
     ChatResponseDto,
+    ChatSourceDto,
 } from './dto/chat-response.dto';
 import {
     SearchFilterBuilder,
 } from '../vector-storage/qdrant/search-filter.builder';
+
+import {
+    UserRole,
+} from '../user/enums/user-role.enum';
+
+import {
+    AccessScopeService,
+} from './access-scope.service';
 
 @Injectable()
 export class ChatService {
@@ -32,6 +41,8 @@ export class ChatService {
     private readonly topK: number = 5;
 
     constructor(
+        private readonly accessScopeService:
+        AccessScopeService,
         private readonly aiService:
         AiService,
         private readonly embeddingsService:
@@ -43,6 +54,7 @@ export class ChatService {
 
     async search(
         request: ChatRequestDto,
+        userRole: UserRole,
     ): Promise<ChatResponseDto> {
         const embeddings =
             await this.embeddingsService
@@ -61,10 +73,17 @@ export class ChatService {
             );
         }
 
+        const allowedAccessLevels =
+            this.accessScopeService
+                .getAccessScope(
+                    userRole,
+                );
+
         const filter =
             SearchFilterBuilder.build(
                 request.documentType,
                 request.language,
+                allowedAccessLevels,
             );
 
         const results =
@@ -96,6 +115,59 @@ export class ChatService {
                     chunk =>
                         chunk.trim()
                             .length > 0,
+                );
+
+        const sources: ChatSourceDto[] =
+            results
+                .map(
+                    result => {
+                        const documentName =
+                            result.payload
+                                .documentName ??
+                            result.payload
+                                .source;
+
+                        const pageNumber =
+                            result.payload
+                                .pageNumber;
+
+                        if (
+                            typeof documentName !==
+                            'string'
+                        ) {
+                            return undefined;
+                        }
+
+                        return {
+                            documentName,
+                            ...(typeof pageNumber ===
+                            'number'
+                                ? {
+                                    pageNumber,
+                                }
+                                : {}),
+                        };
+                    },
+                )
+                .filter(
+                    (
+                        source,
+                    ): source is ChatSourceDto =>
+                        source !== undefined,
+                )
+                .filter(
+                    (
+                        source,
+                        index,
+                        allSources,
+                    ) =>
+                        allSources.findIndex(
+                            item =>
+                                item.documentName ===
+                                source.documentName &&
+                                item.pageNumber ===
+                                source.pageNumber,
+                        ) === index,
                 );
 
         const context =
@@ -142,6 +214,7 @@ export class ChatService {
         return {
             answer:
             aiResponse.answer,
+            sources,
         };
     }
 }

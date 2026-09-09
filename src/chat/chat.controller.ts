@@ -4,6 +4,7 @@ import {
     HttpCode,
     HttpStatus,
     Post,
+    Req,
 } from '@nestjs/common';
 
 import {
@@ -14,9 +15,6 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 
-import {
-    Public,
-} from '../auth/decorators/public.decorator';
 
 import {
     ChatRequestDto,
@@ -28,6 +26,14 @@ import {
     ChatService,
 } from './chat.service';
 
+import {
+    Request,
+} from 'express';
+
+import {
+    TokenPayload,
+} from '../auth/interfaces/token-payload.interface';
+
 @ApiTags('chat')
 @Controller('chat')
 export class ChatController {
@@ -37,7 +43,7 @@ export class ChatController {
     ) {
     }
 
-    @Public()
+
     @Post()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
@@ -59,9 +65,17 @@ export class ChatController {
     })
     async search(
         @Body()
-        request: ChatRequestDto,
+        chatRequest: ChatRequestDto,
+        @Req()
+        httpRequest:
+            Request & {
+            user: TokenPayload;
+        },
     ): Promise<ChatResponseDto> {
         return this.chatService
-            .search(request);
+            .search(
+                chatRequest,
+                httpRequest.user.role,
+            );
     }
 }

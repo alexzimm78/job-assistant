@@ -1,4 +1,7 @@
 import {
+    DocumentAccessLevel,
+} from '../../ingestion/enums/document-access-level.enum';
+import {
     DocumentLanguage,
 } from '../../ingestion/enums/document-language.enum';
 import {
@@ -14,6 +17,8 @@ export class SearchFilterBuilder {
     static build(
         documentType?: DocumentType,
         language?: DocumentLanguage,
+        allowedAccessLevels:
+        DocumentAccessLevel[] = [],
     ): SearchFilter | undefined {
         const must:
             SearchFilterCondition[] = [];
@@ -35,7 +40,18 @@ export class SearchFilterBuilder {
                     'language',
                 match: {
                     value:
-                    language,
+            language,
+        },
+        });
+        }
+
+        if (allowedAccessLevels.length > 0) {
+            must.push({
+                key:
+                    'accessLevel',
+                match: {
+                    any:
+                    allowedAccessLevels,
                 },
             });
         }

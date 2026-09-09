@@ -8,6 +8,10 @@ import {
 
 import {ChunkingService} from './chunking.service';
 
+import {
+    DocumentAccessLevel,
+} from './enums/document-access-level.enum';
+
 describe('ChunkingService', () => {
     let service: ChunkingService;
 
@@ -126,6 +130,8 @@ describe('ChunkingService', () => {
                 DocumentType.RESUME,
                 language:
                 DocumentLanguage.DE,
+                accessLevel:
+                DocumentAccessLevel.PUBLIC,
             };
 
             const chunks =
@@ -154,6 +160,8 @@ describe('ChunkingService', () => {
                         DocumentType.RESUME,
                         language:
                         DocumentLanguage.DE,
+                        accessLevel:
+                        DocumentAccessLevel.PUBLIC,
                     });
             }
 

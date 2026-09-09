@@ -1,4 +1,7 @@
 import {
+    DocumentAccessLevel,
+} from '../enums/document-access-level.enum';
+import {
     DocumentLanguage,
 } from '../enums/document-language.enum';
 import {
@@ -8,4 +11,5 @@ import {
 export interface DocumentMetadata {
     documentType: DocumentType;
     language: DocumentLanguage;
+    accessLevel: DocumentAccessLevel;
 }

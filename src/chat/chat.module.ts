@@ -13,6 +13,9 @@ import {
 } from '../vector-storage/vector-storage.module';
 
 import {
+    AccessScopeService,
+} from './access-scope.service';
+import {
     ChatController,
 } from './chat.controller';
 import {
@@ -29,6 +32,7 @@ import {
         ChatController,
     ],
     providers: [
+        AccessScopeService,
         ChatService,
     ],
 })

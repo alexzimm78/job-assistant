@@ -119,6 +119,8 @@ export class IngestionService {
             dto.documentType,
             language:
             dto.language,
+            accessLevel:
+            dto.accessLevel,
         };
 
         return this.ingestExtractedDocuments(
@@ -208,6 +210,9 @@ export class IngestionService {
 
                     language:
                     chunk.metadata.language,
+
+                    accessLevel:
+                    chunk.metadata.accessLevel,
                 }),
             );
 

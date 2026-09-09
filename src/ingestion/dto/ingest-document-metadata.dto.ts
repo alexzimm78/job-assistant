@@ -7,6 +7,9 @@ import {
 } from 'class-validator';
 
 import {
+    DocumentAccessLevel,
+} from '../enums/document-access-level.enum';
+import {
     DocumentLanguage,
 } from '../enums/document-language.enum';
 import {
@@ -15,18 +18,35 @@ import {
 
 export class IngestDocumentMetadataDto {
     @ApiProperty({
-        description: 'Art des hochgeladenen Dokuments',
-        enum: DocumentType,
-        example: DocumentType.JOB_OFFER,
+        description:
+            'Art des hochgeladenen Dokuments',
+        enum:
+        DocumentType,
+        example:
+        DocumentType.JOB_OFFER,
     })
     @IsEnum(DocumentType)
     documentType: DocumentType;
 
     @ApiProperty({
-        description: 'Sprache des hochgeladenen Dokuments',
-        enum: DocumentLanguage,
-        example: DocumentLanguage.DE,
+        description:
+            'Sprache des hochgeladenen Dokuments',
+        enum:
+        DocumentLanguage,
+        example:
+        DocumentLanguage.DE,
     })
     @IsEnum(DocumentLanguage)
     language: DocumentLanguage;
+
+    @ApiProperty({
+        description:
+            'Zugriffsebene des hochgeladenen Dokuments',
+        enum:
+        DocumentAccessLevel,
+        example:
+        DocumentAccessLevel.PUBLIC,
+    })
+    @IsEnum(DocumentAccessLevel)
+    accessLevel: DocumentAccessLevel;
 }

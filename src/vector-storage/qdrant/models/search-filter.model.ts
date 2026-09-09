@@ -1,6 +1,15 @@
-export class SearchFilterMatcher {
-    value: string | number | boolean;
+export type SearchFilterValue =
+    string |
+    number |
+    boolean;
+
+export type SearchFilterMatcher =
+    | {
+    value: SearchFilterValue;
 }
+    | {
+    any: string[] | number[];
+};
 
 export class SearchFilterCondition {
     key: string;
