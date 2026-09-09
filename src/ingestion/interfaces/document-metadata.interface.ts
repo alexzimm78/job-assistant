@@ -9,6 +9,8 @@ import {
 } from '../enums/document-type.enum';
 
 export interface DocumentMetadata {
+    documentId: string;
+    documentVersion: number;
     documentType: DocumentType;
     language: DocumentLanguage;
     accessLevel: DocumentAccessLevel;

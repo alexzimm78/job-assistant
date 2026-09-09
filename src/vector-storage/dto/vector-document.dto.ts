@@ -125,4 +125,32 @@ export class VectorDocumentDto {
     @IsOptional()
     @IsEnum(DocumentAccessLevel)
     accessLevel?: DocumentAccessLevel;
+
+    @ApiProperty({
+        description:
+            'Permanente ID des logischen Dokuments',
+        example:
+            'DOC-001',
+        required:
+            false,
+    })
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    documentId?: string;
+
+    @ApiProperty({
+        description:
+            'Version des Dokuments',
+        example:
+            1,
+        minimum:
+            1,
+        required:
+            false,
+    })
+    @IsOptional()
+    @IsInt()
+    @Min(1)
+    documentVersion?: number;
 }

@@ -300,3 +300,14 @@ Beispiel:
     "documentType": "JOB_OFFER",
     "language": "DE"
 }
+
+
+## Dokumentversionierung und Archivierung
+
+Die Document Ingestion Pipeline unterstützt einen einfachen Lebenszyklus für Dokumentversionen.
+
+Jeder hochgeladene Dokument-Chunk enthält:
+
+```text
+documentId
+documentVersion

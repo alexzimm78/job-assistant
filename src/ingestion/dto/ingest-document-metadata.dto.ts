@@ -3,7 +3,15 @@ import {
 } from '@nestjs/swagger';
 
 import {
+    Type,
+} from 'class-transformer';
+
+import {
     IsEnum,
+    IsInt,
+    IsNotEmpty,
+    IsString,
+    Min,
 } from 'class-validator';
 
 import {
@@ -17,6 +25,29 @@ import {
 } from '../enums/document-type.enum';
 
 export class IngestDocumentMetadataDto {
+    @ApiProperty({
+        description:
+            'Permanente ID des logischen Dokuments',
+        example:
+            'DOC-001',
+    })
+    @IsString()
+    @IsNotEmpty()
+    documentId: string;
+
+    @ApiProperty({
+        description:
+            'Version des Dokuments',
+        example:
+            1,
+        minimum:
+            1,
+    })
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    documentVersion: number;
+
     @ApiProperty({
         description:
             'Art des hochgeladenen Dokuments',

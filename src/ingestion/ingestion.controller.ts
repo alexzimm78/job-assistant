@@ -103,6 +103,8 @@ export class IngestionController {
             type: 'object',
             required: [
                 'file',
+                'documentId',
+                'documentVersion',
                 'documentType',
                 'language',
                 'accessLevel',
@@ -113,6 +115,22 @@ export class IngestionController {
                     format: 'binary',
                     description:
                         'Unterstützte Formate: TXT, PDF und DOCX',
+                },
+                documentId: {
+                    type: 'string',
+                    example:
+                        'DOC-001',
+                    description:
+                        'Permanente ID des logischen Dokuments',
+                },
+                documentVersion: {
+                    type: 'integer',
+                    minimum:
+                        1,
+                    example:
+                        1,
+                    description:
+                        'Positive ganzzahlige Version des Dokuments',
                 },
                 documentType: {
                     type: 'string',

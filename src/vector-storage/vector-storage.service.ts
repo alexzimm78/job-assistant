@@ -1,4 +1,6 @@
-import { randomUUID } from 'crypto';
+import {
+    randomUUID,
+} from 'crypto';
 
 import {
     Injectable,
@@ -6,18 +8,34 @@ import {
     Logger,
 } from '@nestjs/common';
 
-import { EmbeddingsService } from '../embeddings/embeddings.service';
-import { Embeddings } from '../embeddings/models/embedding.model';
+import {
+    EmbeddingsService,
+} from '../embeddings/embeddings.service';
+import {
+    Embeddings,
+} from '../embeddings/models/embedding.model';
 
-import { SaveVectorDocumentsRequestDto } from './dto/save-vector-documents-request.dto';
-import { SearchVectorDocumentsRequestDto } from './dto/search-vector-documents-request.dto';
-import { VectorDocumentDto } from './dto/vector-document.dto';
-import { QdrantPoint } from './qdrant/models/qdrant-point.model';
-import { QdrantSearchResult } from './qdrant/models/qdrant-search-result.model';
-import { QdrantClient } from './qdrant/qdrant.client';
-import {SearchFilter,} from './qdrant/models/search-filter.model';
-
-
+import {
+    SaveVectorDocumentsRequestDto,
+} from './dto/save-vector-documents-request.dto';
+import {
+    SearchVectorDocumentsRequestDto,
+} from './dto/search-vector-documents-request.dto';
+import {
+    VectorDocumentDto,
+} from './dto/vector-document.dto';
+import {
+    QdrantPoint,
+} from './qdrant/models/qdrant-point.model';
+import {
+    QdrantSearchResult,
+} from './qdrant/models/qdrant-search-result.model';
+import {
+    SearchFilter,
+} from './qdrant/models/search-filter.model';
+import {
+    QdrantClient,
+} from './qdrant/qdrant.client';
 
 @Injectable()
 export class VectorStorageService {
@@ -32,7 +50,8 @@ export class VectorStorageService {
 
         private readonly qdrantClient:
         QdrantClient,
-    ) {}
+    ) {
+    }
 
     // --------------------------------------------------
     // DOKUMENTE INKLUSIVE EMBEDDINGS SPEICHERN
@@ -46,7 +65,8 @@ export class VectorStorageService {
                 (
                     document:
                     VectorDocumentDto,
-                ) => document.content,
+                ) =>
+                    document.content,
             );
 
         const embeddings =
@@ -97,8 +117,10 @@ export class VectorStorageService {
                     > = {
                         title:
                         document.title,
+
                         content:
                         document.content,
+
                         text:
                         document.content,
                     };
@@ -125,6 +147,7 @@ export class VectorStorageService {
                         payload.documentName =
                             document.documentName;
                     }
+
                     if (
                         document.pageNumber !==
                         undefined
@@ -136,6 +159,19 @@ export class VectorStorageService {
                     if (document.chunkText) {
                         payload.chunkText =
                             document.chunkText;
+                    }
+
+                    if (document.documentId) {
+                        payload.documentId =
+                            document.documentId;
+                    }
+
+                    if (
+                        document.documentVersion !==
+                        undefined
+                    ) {
+                        payload.documentVersion =
+                            document.documentVersion;
                     }
 
                     if (document.documentType) {
@@ -156,8 +192,10 @@ export class VectorStorageService {
                     return {
                         id:
                             randomUUID(),
+
                         vector:
                             embeddings[index],
+
                         payload,
                     };
                 },
@@ -172,6 +210,53 @@ export class VectorStorageService {
         );
 
         return points.length;
+    }
+
+    // --------------------------------------------------
+// AKTIVE DOKUMENTVERSION SUCHEN
+// --------------------------------------------------
+
+    async findPointsByDocumentId(
+        documentId: string,
+    ): Promise<QdrantPoint[]> {
+        return this.qdrantClient
+            .findPointsByDocumentId(
+                documentId,
+            );
+    }
+
+// --------------------------------------------------
+// ALTE DOKUMENTVERSION ARCHIVIEREN
+// --------------------------------------------------
+
+    async archivePoints(
+        points: QdrantPoint[],
+    ): Promise<void> {
+        await this.qdrantClient
+            .saveToArchive(
+                points,
+            );
+
+        this.logger.log(
+            `Dokument-Points archiviert: ${points.length}`,
+        );
+    }
+
+// --------------------------------------------------
+// ALTE DOKUMENTVERSION AUS ACTIVE LÖSCHEN
+// --------------------------------------------------
+
+    async deletePoints(
+        points: QdrantPoint[],
+    ): Promise<void> {
+        await this.qdrantClient
+            .deletePoints(
+                points,
+            );
+
+        this.logger.log(
+            `Dokument-Points aus Active gelöscht: ${points.length}`,
+        );
     }
 
     // --------------------------------------------------

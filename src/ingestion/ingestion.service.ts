@@ -1,5 +1,6 @@
 import {
     Injectable,
+    InternalServerErrorException,
 } from '@nestjs/common';
 
 import {
@@ -31,6 +32,9 @@ import {
 import {
     IngestDocumentRequestDto,
 } from './dto/ingest-document-request.dto';
+import {
+    DocumentVersionsConflictException,
+} from './exceptions/document-versions-conflict.exception';
 import {
     MultiformatExtractor,
 } from './extractors/multiformat.extractor';
@@ -66,6 +70,10 @@ export class IngestionService {
         filePath: string,
         metadata: DocumentMetadata,
     ): Promise<number> {
+        await this.prepareDocumentVersion(
+            metadata,
+        );
+
         const buffer =
             await fs.readFile(filePath);
 
@@ -88,6 +96,10 @@ export class IngestionService {
         file: Express.Multer.File,
         metadata: IngestDocumentMetadataDto,
     ): Promise<number> {
+        await this.prepareDocumentVersion(
+            metadata,
+        );
+
         const extractedDocuments =
             await this.multiformatExtractor.extract(
                 file.buffer,
@@ -115,13 +127,25 @@ export class IngestionService {
         ];
 
         const metadata: DocumentMetadata = {
+            documentId:
+            dto.documentId,
+
+            documentVersion:
+            dto.documentVersion,
+
             documentType:
             dto.documentType,
+
             language:
             dto.language,
+
             accessLevel:
             dto.accessLevel,
         };
+
+        await this.prepareDocumentVersion(
+            metadata,
+        );
 
         return this.ingestExtractedDocuments(
             extractedDocuments,
@@ -205,6 +229,12 @@ export class IngestionService {
                     chunkText:
                     chunk.content,
 
+                    documentId:
+                    chunk.metadata.documentId,
+
+                    documentVersion:
+                    chunk.metadata.documentVersion,
+
                     documentType:
                     chunk.metadata.documentType,
 
@@ -234,6 +264,60 @@ export class IngestionService {
                     documents,
                 },
                 embeddings,
+            );
+    }
+
+    // --------------------------------------------------
+// DOKUMENTVERSION PRÜFEN UND ALTE VERSION ARCHIVIEREN
+// --------------------------------------------------
+
+    private async prepareDocumentVersion(
+        metadata: DocumentMetadata,
+    ): Promise<void> {
+        const existingPoints =
+            await this.vectorStorageService
+                .findPointsByDocumentId(
+                    metadata.documentId,
+                );
+
+        if (existingPoints.length === 0) {
+            return;
+        }
+
+        const oldVersionValue =
+            existingPoints[0]
+                .payload.documentVersion;
+
+        const oldVersion =
+            Number(oldVersionValue);
+
+        if (
+            !Number.isInteger(oldVersion) ||
+            oldVersion < 1
+        ) {
+            throw new InternalServerErrorException(
+                'Die aktuelle Dokumentversion in Qdrant ist ungültig.',
+            );
+        }
+
+        if (
+            metadata.documentVersion <=
+            oldVersion
+        ) {
+            throw new DocumentVersionsConflictException(
+                oldVersion,
+                metadata.documentVersion,
+            );
+        }
+
+        await this.vectorStorageService
+            .archivePoints(
+                existingPoints,
+            );
+
+        await this.vectorStorageService
+            .deletePoints(
+                existingPoints,
             );
     }
 }
