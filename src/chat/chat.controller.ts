@@ -10,11 +10,19 @@ import {
 import {
     ApiBadGatewayResponse,
     ApiBadRequestResponse,
+    ApiBearerAuth,
     ApiOkResponse,
     ApiOperation,
     ApiTags,
 } from '@nestjs/swagger';
 
+import {
+    Request,
+} from 'express';
+
+import {
+    TokenPayload,
+} from '../auth/interfaces/token-payload.interface';
 
 import {
     ChatRequestDto,
@@ -26,15 +34,8 @@ import {
     ChatService,
 } from './chat.service';
 
-import {
-    Request,
-} from 'express';
-
-import {
-    TokenPayload,
-} from '../auth/interfaces/token-payload.interface';
-
 @ApiTags('chat')
+@ApiBearerAuth('access-token')
 @Controller('chat')
 export class ChatController {
     constructor(
@@ -42,7 +43,6 @@ export class ChatController {
         ChatService,
     ) {
     }
-
 
     @Post()
     @HttpCode(HttpStatus.OK)
@@ -75,6 +75,7 @@ export class ChatController {
         return this.chatService
             .search(
                 chatRequest,
+                httpRequest.user.sub,
                 httpRequest.user.role,
             );
     }

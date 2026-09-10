@@ -19,8 +19,14 @@ import {
     ChatController,
 } from './chat.controller';
 import {
+    ChatHistoryService,
+} from './chat-history.service';
+import {
     ChatService,
 } from './chat.service';
+import {
+    PromptService,
+} from './prompt.service';
 
 @Module({
     imports: [
@@ -33,7 +39,9 @@ import {
     ],
     providers: [
         AccessScopeService,
+        ChatHistoryService,
         ChatService,
+        PromptService,
     ],
 })
 export class ChatModule {

@@ -1,7 +1,7 @@
 import {
     Injectable,
     InternalServerErrorException,
-    Logger,
+
 } from '@nestjs/common';
 
 import {
@@ -11,9 +11,21 @@ import {
     EmbeddingsService,
 } from '../embeddings/embeddings.service';
 import {
+    UserRole,
+} from '../user/enums/user-role.enum';
+import {
+    SearchFilterBuilder,
+} from '../vector-storage/qdrant/search-filter.builder';
+import {
     VectorStorageService,
 } from '../vector-storage/vector-storage.service';
 
+import {
+    AccessScopeService,
+} from './access-scope.service';
+import {
+    ChatHistoryService,
+} from './chat-history.service';
 import {
     ChatRequestDto,
 } from './dto/chat-request.dto';
@@ -22,21 +34,12 @@ import {
     ChatSourceDto,
 } from './dto/chat-response.dto';
 import {
-    SearchFilterBuilder,
-} from '../vector-storage/qdrant/search-filter.builder';
-
-import {
-    UserRole,
-} from '../user/enums/user-role.enum';
-
-import {
-    AccessScopeService,
-} from './access-scope.service';
+    PromptService,
+} from './prompt.service';
 
 @Injectable()
 export class ChatService {
-    private readonly logger =
-        new Logger(ChatService.name);
+
 
     private readonly topK: number = 5;
 
@@ -45,8 +48,12 @@ export class ChatService {
         AccessScopeService,
         private readonly aiService:
         AiService,
+        private readonly chatHistoryService:
+        ChatHistoryService,
         private readonly embeddingsService:
         EmbeddingsService,
+        private readonly promptService:
+        PromptService,
         private readonly vectorStorageService:
         VectorStorageService,
     ) {
@@ -54,8 +61,16 @@ export class ChatService {
 
     async search(
         request: ChatRequestDto,
+        userId: number,
         userRole: UserRole,
     ): Promise<ChatResponseDto> {
+        const history =
+            this.chatHistoryService
+                .getHistory(
+                    userId,
+                    request.conversationId,
+                );
+
         const embeddings =
             await this.embeddingsService
                 .createEmbeddings({
@@ -170,46 +185,37 @@ export class ChatService {
                         ) === index,
                 );
 
-        const context =
-            chunks.length > 0
-                ? chunks.join(
-                    '\n\n',
+        const prompt =
+            this.promptService
+                .buildPromptForChat()
+                .withUserRole(
+                    userRole,
                 )
-                : 'Keine relevanten Informationen gefunden.';
+                .withContext(
+                    chunks,
+                )
+                .withChatHistory(
+                    history,
+                )
+                .withQuestion(
+                    request.message,
+                )
+                .build();
 
-        const prompt = [
-            'Du bist ein hilfreicher Assistent.',
-            'Beantworte die Frage ausschließlich auf Grundlage des bereitgestellten Kontexts.',
-            'Erfinde keine Informationen. Wenn der Kontext keine Antwort enthält, sage, dass die Information in der Wissensdatenbank nicht vorhanden ist.',
-            'Gib nur die Antwort aus und erwähne den Kontext nicht.',
-            '',
-            'Kontext:',
-            context,
-            '',
-            'Frage:',
-            request.message,
-        ].join('\n');
-
-        this.logger.log(
-            `Frage: ${request.message}`,
-        );
-
-        chunks.forEach(
-            (
-                chunk,
-                index,
-            ) => {
-                this.logger.log(
-                    `Ergebnis ${index + 1}: ${chunk}`,
-                );
-            },
-        );
 
         const aiResponse =
             await this.aiService
                 .ask({
                     message: prompt,
                 });
+
+        this.chatHistoryService
+            .addMessage(
+                userId,
+                request.conversationId,
+                request.message,
+                aiResponse.answer,
+            );
 
         return {
             answer:
