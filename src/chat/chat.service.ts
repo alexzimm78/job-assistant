@@ -1,21 +1,24 @@
 import {
     Injectable,
     InternalServerErrorException,
-
 } from '@nestjs/common';
 
 import {
     AiService,
 } from '../ai/ai.service';
+
 import {
     EmbeddingsService,
 } from '../embeddings/embeddings.service';
+
 import {
     UserRole,
 } from '../user/enums/user-role.enum';
+
 import {
     SearchFilterBuilder,
 } from '../vector-storage/qdrant/search-filter.builder';
+
 import {
     VectorStorageService,
 } from '../vector-storage/vector-storage.service';
@@ -23,37 +26,52 @@ import {
 import {
     AccessScopeService,
 } from './access-scope.service';
+
 import {
     ChatHistoryService,
 } from './chat-history.service';
+
+import {
+    ContextService,
+} from './context.service';
+
 import {
     ChatRequestDto,
 } from './dto/chat-request.dto';
+
 import {
     ChatResponseDto,
     ChatSourceDto,
 } from './dto/chat-response.dto';
+
 import {
     PromptService,
 } from './prompt.service';
 
 @Injectable()
 export class ChatService {
-
-
-    private readonly topK: number = 5;
+    private readonly topK:
+        number = 5;
 
     constructor(
         private readonly accessScopeService:
         AccessScopeService,
+
         private readonly aiService:
         AiService,
+
         private readonly chatHistoryService:
         ChatHistoryService,
+
+        private readonly contextService:
+        ContextService,
+
         private readonly embeddingsService:
         EmbeddingsService,
+
         private readonly promptService:
         PromptService,
+
         private readonly vectorStorageService:
         VectorStorageService,
     ) {
@@ -109,81 +127,61 @@ export class ChatService {
                     filter,
                 );
 
-        const chunks: string[] =
-            results
-                .map(
-                    result => {
-                        const chunk =
-                            result.payload
-                                .chunkText ??
-                            result.payload
-                                .content ??
-                            '';
-
-                        return typeof chunk ===
-                        'string'
-                            ? chunk
-                            : '';
-                    },
-                )
-                .filter(
-                    chunk =>
-                        chunk.trim()
-                            .length > 0,
+        const preparedFragments =
+            this.contextService
+                .generateContext(
+                    results,
                 );
 
-        const sources: ChatSourceDto[] =
-            results
-                .map(
-                    result => {
-                        const documentName =
-                            result.payload
-                                .documentName ??
-                            result.payload
-                                .source;
+        const preparedContext:
+            string[] =
+            preparedFragments.map(
+                fragment =>
+                    fragment.content,
+            );
 
-                        const pageNumber =
-                            result.payload
-                                .pageNumber;
+        const sources:
+            ChatSourceDto[] = [];
 
-                        if (
-                            typeof documentName !==
-                            'string'
-                        ) {
-                            return undefined;
-                        }
+        for (
+            const fragment
+            of preparedFragments
+            ) {
+            if (
+                fragment.pageNumbers
+                    .length === 0
+            ) {
+                sources.push({
+                    documentName:
+                    fragment.documentName,
+                });
 
-                        return {
-                            documentName,
-                            ...(typeof pageNumber ===
-                            'number'
-                                ? {
-                                    pageNumber,
-                                }
-                                : {}),
-                        };
-                    },
-                )
-                .filter(
-                    (
-                        source,
-                    ): source is ChatSourceDto =>
-                        source !== undefined,
-                )
-                .filter(
-                    (
-                        source,
-                        index,
-                        allSources,
-                    ) =>
-                        allSources.findIndex(
-                            item =>
-                                item.documentName ===
-                                source.documentName &&
-                                item.pageNumber ===
-                                source.pageNumber,
-                        ) === index,
-                );
+                continue;
+            }
+
+            for (
+                const pageNumber
+                of fragment.pageNumbers
+                ) {
+                const sourceExists =
+                    sources.some(
+                        source =>
+                            source.documentName ===
+                            fragment.documentName &&
+                            source.pageNumber ===
+                            pageNumber,
+                    );
+
+                if (!sourceExists) {
+                    sources.push({
+                        documentName:
+                        fragment.documentName,
+
+                        pageNumber,
+                    });
+                }
+            }
+        }
 
         const prompt =
             this.promptService
@@ -192,7 +190,7 @@ export class ChatService {
                     userRole,
                 )
                 .withContext(
-                    chunks,
+                    preparedContext,
                 )
                 .withChatHistory(
                     history,
@@ -202,11 +200,11 @@ export class ChatService {
                 )
                 .build();
 
-
         const aiResponse =
             await this.aiService
                 .ask({
-                    message: prompt,
+                    message:
+                    prompt,
                 });
 
         this.chatHistoryService
@@ -220,6 +218,7 @@ export class ChatService {
         return {
             answer:
             aiResponse.answer,
+
             sources,
         };
     }

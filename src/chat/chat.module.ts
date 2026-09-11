@@ -5,9 +5,11 @@ import {
 import {
     AiModule,
 } from '../ai/ai.module';
+
 import {
     EmbeddingsModule,
 } from '../embeddings/embeddings.module';
+
 import {
     VectorStorageModule,
 } from '../vector-storage/vector-storage.module';
@@ -15,15 +17,23 @@ import {
 import {
     AccessScopeService,
 } from './access-scope.service';
+
 import {
     ChatController,
 } from './chat.controller';
+
 import {
     ChatHistoryService,
 } from './chat-history.service';
+
 import {
     ChatService,
 } from './chat.service';
+
+import {
+    ContextService,
+} from './context.service';
+
 import {
     PromptService,
 } from './prompt.service';
@@ -34,13 +44,16 @@ import {
         EmbeddingsModule,
         VectorStorageModule,
     ],
+
     controllers: [
         ChatController,
     ],
+
     providers: [
         AccessScopeService,
         ChatHistoryService,
         ChatService,
+        ContextService,
         PromptService,
     ],
 })
